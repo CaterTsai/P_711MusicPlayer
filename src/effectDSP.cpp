@@ -62,9 +62,10 @@ void effectDSP::update(float delta)
 #pragma region echoDSP
 void echoDSP::initialDSP()
 {
-	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_DELAY, 300.0f);
+	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_DELAY, 630);
 	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_FEEDBACK, 20.0f);
-	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_WETLEVEL, -20.0f);
+	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_WETLEVEL, -5.0f);
+	_dspEffect->setParameterFloat(FMOD_DSP_ECHO_DRYLEVEL, 0.0f);
 }
 #pragma endregion
 
@@ -75,37 +76,30 @@ void distortionDSP::initialDSP()
 }
 #pragma endregion
 
-#pragma region pitchShiftDSP
+#pragma region lowpassDSP
 //--------------------------------------------------------------
-void pitchShiftDSP::initialDSP()
+void lowpassDSP::initialDSP()
 {
-	//_rotateDegree = 0.0;
-	//_rotateDegreeV = 360.0 / 5.0;
-	_dspEffect->setParameterFloat(FMOD_DSP_PITCHSHIFT_PITCH, 0.7);
+	_animCutHz.setRepeatType(AnimRepeat::LOOP_BACK_AND_FORTH);
+	_animCutHz.setDuration(2.0);
+
+	_dspEffect->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, 500);
+	_dspEffect->setParameterFloat(FMOD_DSP_LOWPASS_RESONANCE, 1.5);
 }
 
-////--------------------------------------------------------------
-//void pitchShiftDSP::startDSP()
-//{
-//	_rotateDegree = 0.0;
-//	_rotateDegreeV = 360.0 / 30.0;
-//}
+//--------------------------------------------------------------
+void lowpassDSP::startDSP()
+{
+	_animCutHz.animateFromTo(500, 3000.0);
+}
 
-////--------------------------------------------------------------
-//void pitchShiftDSP::update(float delta)
-//{
-//	if (_isActive)
-//	{
-//		_rotateDegree += _rotateDegreeV * delta;
-//		if (_rotateDegree >= 360.0)
-//		{
-//			_rotateDegree -= 360.0;
-//		}
-//
-//		float val_ = ofMap(sin( DEG_TO_RAD * _rotateDegree ), 0.0f, 1.0f, 1.0f, 2.0f);
-//		_dspEffect->setParameterFloat(FMOD_DSP_PITCHSHIFT_PITCH, val_);
-//	}
-//}
+//--------------------------------------------------------------
+void lowpassDSP::update(float delta)
+{
+	if (_isActive)
+	{
+		_animCutHz.update(delta);
+		_dspEffect->setParameterFloat(FMOD_DSP_LOWPASS_CUTOFF, _animCutHz.getCurrentValue());
+	}
+}
 #pragma endregion
-
-

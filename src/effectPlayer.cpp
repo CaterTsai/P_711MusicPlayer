@@ -1,25 +1,12 @@
 #include "effectPlayer.h"
 
-#pragma region Basic
+#pragma region basicPlayer
 //--------------------------------------------------------------
-effectPlayer::effectPlayer()
-	:_vol(0.0)
-	,_eState(eStateMute)
-{}
-
-//--------------------------------------------------------------
-effectPlayer::~effectPlayer()
-{
-}
-#pragma endregion
-
-#pragma region Control
-//--------------------------------------------------------------
-bool effectPlayer::load(string path, bool loop)
+bool basicPlayer::load(string path, bool loop)
 {
 	if (!_player.loadSound(path))
 	{
-		ofLog(OF_LOG_ERROR, "[effectPlayer]load audio failed : " + path);
+		ofLog(OF_LOG_ERROR, "[basicPlayer]load audio failed : " + path);
 		return false;
 	}
 
@@ -27,21 +14,39 @@ bool effectPlayer::load(string path, bool loop)
 	_player.setMultiPlay(false);
 	return true;
 }
+#pragma endregion
+
+#pragma region loopingPlayer
+#pragma region Basic
+//--------------------------------------------------------------
+loopingPlayer::loopingPlayer()
+	:basicPlayer()
+	,_eState(eStateWait)
+	,_vol(1.0f)
+	,_maxVol(1.0f)
+{}
 
 //--------------------------------------------------------------
-void effectPlayer::play()
+loopingPlayer::~loopingPlayer()
+{
+}
+#pragma endregion
+
+#pragma region Control
+//--------------------------------------------------------------
+void loopingPlayer::play()
 {
 	if (_player.isLoaded() && !_player.getIsPlaying())
 	{
 		_vol = 0.0;
 		_player.setVolume(_vol);
 		_player.play();
-		_eState = eStateMute;
+		_eState = eStateWait;
 	}
 }
 
 //--------------------------------------------------------------
-void effectPlayer::stop()
+void loopingPlayer::stop()
 {
 	if (_player.getIsPlaying())
 	{
@@ -50,31 +55,113 @@ void effectPlayer::stop()
 }
 
 //--------------------------------------------------------------
-void effectPlayer::in()
+void loopingPlayer::in()
 {
 	if (_player.getIsPlaying())
 	{
-		_vol = 1.0;
+		_vol = _maxVol;
 		_player.setVolume(_vol);
 		_eState = eStatePlay;
 	}
 }
 
 //--------------------------------------------------------------
-void effectPlayer::out()
+void loopingPlayer::out()
 {
 	if (_player.getIsPlaying())
 	{
 		_vol = 0.0;
 		_player.setVolume(_vol);
-		_eState = eStateMute;
+		_eState = eStateWait;
 	}
 }
 
 //--------------------------------------------------------------
-eEffectFadeState effectPlayer::getState() const
+bool loopingPlayer::isPlaying()
+{
+	return (_eState == eStatePlay);
+}
+
+//--------------------------------------------------------------
+void loopingPlayer::setMaxVol(float vol)
+{
+	_maxVol = vol;
+	if (isPlaying())
+	{
+		_player.setVolume(_maxVol);
+	}
+}
+
+//--------------------------------------------------------------
+float loopingPlayer::getMaxVol()
+{
+	return _maxVol;
+}
+
+//--------------------------------------------------------------
+eFadeState loopingPlayer::getState() const
 {
 	return _eState;
 }
 #pragma endregion
+#pragma endregion
 
+#pragma region triggerPlayer
+#pragma region Basic
+//--------------------------------------------------------------
+triggerPlayer::triggerPlayer()
+	:basicPlayer()
+	,_isStart(false)
+{
+}
+
+//--------------------------------------------------------------
+triggerPlayer::~triggerPlayer()
+{
+}
+#pragma endregion
+
+#pragma region Control
+//--------------------------------------------------------------
+void triggerPlayer::play()
+{
+	_isStart = true;
+}
+
+//--------------------------------------------------------------
+void triggerPlayer::stop()
+{
+	if (_player.getIsPlaying())
+	{
+		_player.stop();
+	}
+	_isStart = false;
+}
+
+//--------------------------------------------------------------
+void triggerPlayer::in()
+{
+	if (_isStart)
+	{
+		_player.play();
+	}
+}
+
+//--------------------------------------------------------------
+void triggerPlayer::out()
+{
+	if (_isStart)
+	{
+		_player.stop();
+	}
+}
+
+//--------------------------------------------------------------
+bool triggerPlayer::isPlaying()
+{
+	return _player.getIsPlaying();
+}
+#pragma endregion
+
+
+#pragma endregion

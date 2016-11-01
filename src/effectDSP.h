@@ -1,7 +1,10 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxAnimatableFloat.h";
+
 #include "fmod.hpp"
+
 
 enum eEffectType
 {
@@ -40,26 +43,30 @@ protected:
 	FMOD::DSP *_dspEffect;
 };
 
+//---------------------------------------------
 class echoDSP : public effectDSP
 {
 public:
 	void initialDSP() override;
 };
 
+//---------------------------------------------
 class distortionDSP : public effectDSP
 {
 public:
 	void initialDSP() override;
 };
 
-class pitchShiftDSP : public effectDSP
+//---------------------------------------------
+class lowpassDSP : public effectDSP
 {
 public:
 	void initialDSP() override;
-	//void startDSP() override;
-	//void update(float delta) override;
+	void startDSP() override;
+	void update(float delta) override;
 
 private:
-	float _rotateDegree, _rotateDegreeV;
+	ofxAnimatableFloat _animCutHz;
 };
+
 

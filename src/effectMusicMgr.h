@@ -2,27 +2,7 @@
 
 #include "effectPlayer.h"
 #include "effectDSP.h"
-//------------------------------------
-//ENUM
-//------------------------------------
-enum eAudioType
-{
-	eLeft_Crash = 0
-	,eLeft_FXPad1
-	,eLeft_FXPad2
-	,eLeft_Jingo
-	,eLeft_Toms
-	,eLeft_Max
-
-	,eRight_Bass
-	,eRight_Drum
-	,eRight_GT
-	,eRight_LeadSynth
-	,eRight_Synth
-	,eRight_Max
-};
-
-
+#include "constParameter.h"
 
 //------------------------------------
 //CLASS
@@ -34,7 +14,7 @@ public:
 	void update(float delta);
 	bool isPlaying();
 private:
-	bool _isPlaying;
+	bool _isEffectMusicStart;
 #pragma region Basic Music
 //-------------------
 //Basic Music
@@ -52,18 +32,27 @@ private:
 //EffectPlayer
 //-------------------
 public:
-	void addPlayer(eAudioType eType, string path);
+	void addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path);
 	void play();
 	void stop();
 
-	eEffectFadeState getPlayerState(eAudioType eType);
+	bool getIsPlaying(eAudioType eType);
+	void playerToggle(eAudioType eType);
 	void playerIn(eAudioType eType);
 	void playerOut(eAudioType eType);
 
+	void setGroupBalance(float val);
+	void setGroupVol(eAudioGroup _aGroup, float _vol);
+
 private:
 	void updateAllPlayer(float fDelta);
+	void addToGroupSet(eAudioType eType, eAudioGroup eGroup);
+	void updateGroupMaxVol(eAudioGroup eGroup);
 private:
-	map<eAudioType, effectPlayer> _playerMgr;
+
+	float _groupBlance; // 0.0 : 100% Left, 1.0 100% Right
+	map<eAudioType, ofPtr<basicPlayer>> _playerMgr;
+	map<eAudioGroup, vector<eAudioType>> _groupSet;
 #pragma endregion
 
 #pragma region Effect
@@ -90,7 +79,8 @@ private:
 //-------------------
 private:
 	effectMusicMgr()
-		:_isPlaying(false)
+		:_isEffectMusicStart(false)
+		, _groupBlance(0.5f)
 	{};
 	~effectMusicMgr()
 	{

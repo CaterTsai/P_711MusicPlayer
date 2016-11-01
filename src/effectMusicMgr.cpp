@@ -13,9 +13,10 @@ void effectMusicMgr::update(float delta)
 	updateEffect(delta);
 }
 
+//--------------------------------------------------------------
 bool effectMusicMgr::isPlaying()
 {
-	return _isPlaying;
+	return _isEffectMusicStart;
 }
 
 #pragma region Basic Music
@@ -43,13 +44,27 @@ void effectMusicMgr::stopBasic()
 //-------------------
 //EffectPlayer
 //-------------------
-void effectMusicMgr::addPlayer(eAudioType eType, string path)
+void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path)
 {
 	if (_playerMgr.find(eType) == _playerMgr.end())
 	{
-		effectPlayer newPlayer_;
-		_playerMgr.insert(make_pair(eType, newPlayer_));
-		_playerMgr[eType].load(path);
+		switch (ePType)
+		{
+			case eLoopingPlayer:
+			{
+				_playerMgr.insert(make_pair(eType, ofPtr<loopingPlayer>(new loopingPlayer())));
+				break;
+			}
+			case eTriggerPlayer:
+			{
+				_playerMgr.insert(make_pair(eType, ofPtr<triggerPlayer>(new triggerPlayer())));
+				break;
+			}
+		}
+		
+		_playerMgr[eType]->load(path);
+
+		addToGroupSet(eType, eGroup);
 	}
 	else
 	{
@@ -60,29 +75,29 @@ void effectMusicMgr::addPlayer(eAudioType eType, string path)
 //--------------------------------------------------------------
 void effectMusicMgr::play()
 {
-	_isPlaying = true;
+	_isEffectMusicStart = true;
 	for (auto& Iter_ : _playerMgr)
 	{
-		Iter_.second.play();
+		Iter_.second->play();
 	}
 }
 
 //--------------------------------------------------------------
 void effectMusicMgr::stop()
 {
-	_isPlaying = false;
+	_isEffectMusicStart = false;
 	for (auto& Iter_ : _playerMgr)
 	{
-		Iter_.second.stop();
+		Iter_.second->stop();
 	}
 }
 
 //-------------------------------------------------------------
-eEffectFadeState effectMusicMgr::getPlayerState(eAudioType eType)
+bool effectMusicMgr::getIsPlaying(eAudioType eType)
 {
 	try {
 		auto& Iter_ = _playerMgr.at(eType);
-		return Iter_.getState();
+		return Iter_->isPlaying();
 	}
 	catch (out_of_range e) {
 		ofLog(OF_LOG_ERROR, "[effectMusicMgr:getPlayerState]Out of range");
@@ -91,11 +106,33 @@ eEffectFadeState effectMusicMgr::getPlayerState(eAudioType eType)
 }
 
 //--------------------------------------------------------------
+void effectMusicMgr::playerToggle(eAudioType eType)
+{
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
+	bool isPlaying_ = getIsPlaying(eType);
+	if (!isPlaying_)
+	{
+		playerIn(eType);
+	}
+	else if (isPlaying_)
+	{
+		playerOut(eType);
+	}
+}
+
+//--------------------------------------------------------------
 void effectMusicMgr::playerIn(eAudioType eType)
 {
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
 	try {
 		auto& Iter_ = _playerMgr.at(eType);
-		Iter_.in();
+		Iter_->in();
 	}
 	catch (out_of_range e){
 		ofLog(OF_LOG_ERROR, "[effectMusicMgr:playerIn]Out of range");
@@ -105,12 +142,45 @@ void effectMusicMgr::playerIn(eAudioType eType)
 //--------------------------------------------------------------
 void effectMusicMgr::playerOut(eAudioType eType)
 {
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
 	try {
 		auto& Iter_ = _playerMgr.at(eType);
-		Iter_.out();
+		Iter_->out();
 	}
 	catch (out_of_range e) {
 		ofLog(OF_LOG_ERROR, "[effectMusicMgr:playerOut]Out of range");
+	}
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::setGroupBalance(float val)
+{
+	_groupBlance = val;
+
+	updateGroupMaxVol(eAudioGroup::eAudioGroup_Left);
+	updateGroupMaxVol(eAudioGroup::eAudioGroup_Right);
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::setGroupVol(eAudioGroup aGroup, float vol)
+{
+	auto audioList_ = _groupSet[aGroup];
+	float trueVal_ = vol;
+	if (aGroup == eAudioGroup::eAudioGroup_Left)
+	{
+		trueVal_ *= (1.0f - _groupBlance);
+	}
+	else if(aGroup == eAudioGroup::eAudioGroup_Right)
+	{
+		trueVal_ *= _groupBlance;
+	}
+
+	for (auto& iter_ : audioList_)
+	{
+		_playerMgr[iter_]->setMaxVol(trueVal_);
 	}
 }
 
@@ -120,6 +190,41 @@ void effectMusicMgr::updateAllPlayer(float fDelta)
 	for (auto& Iter_ : _playerMgr)
 	{
 		//Iter_.second.update(fDelta);
+	}
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::addToGroupSet(eAudioType eType, eAudioGroup eGroup)
+{
+	if (_groupSet.find(eGroup) != _groupSet.end())
+	{
+		_groupSet[eGroup].push_back(eType);
+	}
+	else
+	{
+		vector<eAudioType> groupList_;
+		groupList_.push_back(eType);
+		_groupSet.insert(make_pair(eGroup, groupList_));
+	}
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::updateGroupMaxVol(eAudioGroup eGroup)
+{
+	auto audioList_ = _groupSet[eGroup];
+	float trueVal_ = _playerMgr[audioList_[0]]->getMaxVol();
+	if (eGroup == eAudioGroup::eAudioGroup_Left)
+	{
+		trueVal_ *= (1.0f - _groupBlance);
+	}
+	else if (eGroup == eAudioGroup::eAudioGroup_Right)
+	{
+		trueVal_ *= _groupBlance;
+	}
+
+	for (auto& iter_ : audioList_)
+	{
+		_playerMgr[iter_]->setMaxVol(trueVal_);
 	}
 }
 
@@ -136,12 +241,16 @@ void effectMusicMgr::setupEffect()
 	ofPtr<effectDSP> distortion_ = ofPtr<effectDSP>(new distortionDSP());
 	distortion_->setup(FMOD_DSP_TYPE_DISTORTION);
 
-	ofPtr<effectDSP> pitchshift_ = ofPtr<effectDSP>(new pitchShiftDSP());
-	pitchshift_->setup(FMOD_DSP_TYPE_PITCHSHIFT);
+	ofPtr<effectDSP> lowpass_ = ofPtr<effectDSP>(new lowpassDSP());
+	lowpass_->setup(FMOD_DSP_TYPE_LOWPASS);
 
 	_effectMgr.insert(make_pair(eEffect_Echo, echo_));
 	_effectMgr.insert(make_pair(eEffect_Distortion, distortion_));
-	_effectMgr.insert(make_pair(eEffect_PitchShift, pitchshift_));
+	_effectMgr.insert(make_pair(eEffect_LowPass, lowpass_));
+
+	//FMOD::Reverb3D
+	FMOD_REVERB_PROPERTIES prop = FMOD_PRESET_AUDITORIUM;
+	ofFmodGetSystem()->setReverbProperties(0, &prop);
 }
 
 //--------------------------------------------------------------
@@ -156,6 +265,11 @@ void effectMusicMgr::updateEffect(float delta)
 //--------------------------------------------------------------
 void effectMusicMgr::activeEffect(eEffectType eType)
 {
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
+
 	try
 	{
 		auto Iter_ = _effectMgr.at(eType);
@@ -170,6 +284,11 @@ void effectMusicMgr::activeEffect(eEffectType eType)
 //--------------------------------------------------------------
 void effectMusicMgr::unactiveEffect(eEffectType eType)
 {
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
+
 	try
 	{
 		auto Iter_ = _effectMgr.at(eType);
@@ -184,6 +303,11 @@ void effectMusicMgr::unactiveEffect(eEffectType eType)
 //--------------------------------------------------------------
 void effectMusicMgr::troggleEffect(eEffectType eType)
 {
+	if (!_isEffectMusicStart)
+	{
+		return;
+	}
+
 	try
 	{
 		auto Iter_ = _effectMgr.at(eType);
