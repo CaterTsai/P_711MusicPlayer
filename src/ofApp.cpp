@@ -4,7 +4,7 @@
 void ofApp::setup(){
 	
 	config::GetInstance()->load("_config.xml");
-
+	_isStartCoin = false;
 	loadAllMusic();
 	loadAllVideo();
 
@@ -17,6 +17,7 @@ void ofApp::setup(){
 
 	ofBackground(0);
 	ofSetVerticalSync(true);
+	ofToggleFullscreen();
 
 	_mainTimer = ofGetElapsedTimef();
 }
@@ -34,6 +35,8 @@ void ofApp::update(){
 	_coinSensorLeft.update();
 	_coinSensorRight.update();
 
+	updateArduino(delta_);
+
 #ifdef _USE_SIMULATION_
 	updateSimulation(delta_);
 #endif // _USE_SIMULATION_
@@ -47,6 +50,7 @@ void ofApp::draw(){
 
 	visionDisplay::GetInstance()->draw();
 
+	drawArduino();
 #ifdef _USE_SIMULATION_
 	drawSimulation();
 #endif // _USE_SIMULATION_
@@ -65,22 +69,12 @@ void ofApp::keyPressed(int key)
 	{
 		case 'a':
 		{
-			visionDisplay::GetInstance()->stopTutorial();
-
-			effectMusicMgr::GetInstance()->playBasic();
-			effectMusicMgr::GetInstance()->play();			
-			visionDisplay::GetInstance()->playBasic();
-			visionDisplay::GetInstance()->play();
+			startCoin();
 			break;
 		}
 		case 's':
 		{
-			effectMusicMgr::GetInstance()->stopBasic();
-			effectMusicMgr::GetInstance()->stop();
-			visionDisplay::GetInstance()->stopBasic();
-			visionDisplay::GetInstance()->stop();
-
-			visionDisplay::GetInstance()->playTutorial();
+			stopCoin();
 			break;
 		}
 		
@@ -132,13 +126,77 @@ void ofApp::keyPressed(int key)
 			visionDisplay::GetInstance()->setDrawArea(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.5), ofGetWidth(), ofGetHeight());
 			break;
 		}
+
+		//Fullscreen
+		case 'f':
+		{
+			ofToggleFullscreen();
+			break;
+		}
+
+		//Ctrl
+		case '1':
+		{
+			_coinSensorLeft.reset();
+			_coinSensorRight.reset();
+			ofLog(OF_LOG_NOTICE, "[Keypress]Reset coin sensor");
+			break;
+		}
+		case '2':
+		{	
+			_motorCtrl ^= true;
+			break;
+		}
 	}
+
+
+	keypressCtrl(key);
 
 #ifdef _USE_SIMULATION_
 	keypressSimulation(key);
 #endif // _USE_SIMULATION_
 
+
 }
+
+#pragma region Control
+//--------------------------------------------------------------
+void ofApp::startCoin()
+{
+	if (_isStartCoin && !_ctrlDevice.isOpen())
+	{
+		return;
+	}
+	visionDisplay::GetInstance()->stopTutorial();
+
+	effectMusicMgr::GetInstance()->playBasic();
+	effectMusicMgr::GetInstance()->play();
+	visionDisplay::GetInstance()->playBasic();
+	visionDisplay::GetInstance()->play();
+
+	_isStartCoin = true;
+}
+
+//--------------------------------------------------------------
+void ofApp::stopCoin()
+{
+	if (!_isStartCoin)
+	{
+		return;
+	}
+	effectMusicMgr::GetInstance()->stopBasic();
+	effectMusicMgr::GetInstance()->stop();
+	visionDisplay::GetInstance()->stopBasic();
+	visionDisplay::GetInstance()->stop();
+
+	visionDisplay::GetInstance()->playTutorial();
+
+	_openCountdown = cMotorCloseTime;
+	_ctrlDevice.open();
+
+	_isStartCoin = false;
+}
+#pragma endregion
 
 #pragma region Effect Music Manager
 //--------------------------------------------------------------
@@ -195,7 +253,6 @@ void ofApp::loadAllVideo()
 	visionDisplay::GetInstance()->setup(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.5), ofGetWidth(), ofGetHeight());
 #else //_USE_SIMULATION_
 	visionDisplay::GetInstance()->setup(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.25), ofGetWidth() * 0.5, ofGetHeight() * 0.5);
-
 #endif // !_USE_SIMULATION_
 
 	visionDisplay::GetInstance()->playTutorial();
@@ -207,6 +264,8 @@ void ofApp::loadAllVideo()
 //--------------------------------------------------------------
 void ofApp::setupArduino()
 {
+	_motorCtrl = false;
+	_openCountdown = 0.0f;
 	_ctrlDevice.setup(config::GetInstance()->devicePort, cSerialBaud);
 	ofAddListener(_ctrlDevice._buttonEvent, this, &ofApp::onButtonEvent);
 	ofAddListener(_ctrlDevice._sliderEvent, this, &ofApp::onSliderEvent);
@@ -216,6 +275,31 @@ void ofApp::setupArduino()
 	ofAddListener(_coinSensorLeft._sensorEvent, this, &ofApp::onSensorEvent);
 	ofAddListener(_coinSensorRight._sensorEvent, this, &ofApp::onSensorEvent);
 
+}
+
+//--------------------------------------------------------------
+void ofApp::updateArduino(float delta)
+{
+	if (_ctrlDevice.isOpen())
+	{
+		_openCountdown -= delta;
+		if (_openCountdown <= 0.0f)
+		{
+			_ctrlDevice.close();
+		}
+	}
+}
+
+//--------------------------------------------------------------
+void ofApp::drawArduino()
+{
+	if (_motorCtrl)
+	{
+		ofPushStyle();
+		ofSetColor(255, 0, 0);
+		ofCircle(10, 10, 5);
+		ofPopStyle();
+	}
 }
 
 //--------------------------------------------------------------
@@ -324,19 +408,19 @@ void ofApp::onSliderEvent(serialArgs<float>& e)
 	{
 		case eSliderLeft:
 		{
-			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f);
+			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f, true);
 			effectMusicMgr::GetInstance()->setGroupVol(eAudioGroup::eAudioGroup_Left, val_);
 			break;
 		}
 		case eSliderRight:
 		{
-			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f);
+			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f, true);
 			effectMusicMgr::GetInstance()->setGroupVol(eAudioGroup::eAudioGroup_Right, val_);
 			break;
 		}
 		case eSliderCenter:
 		{
-			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.0f, 1.0f);
+			float val_ = ofMap(e._param, 0.0f, 3.0f, 0.0f, 1.0f, true);
 			effectMusicMgr::GetInstance()->setGroupBalance(val_);
 			break;
 		}
@@ -345,7 +429,6 @@ void ofApp::onSliderEvent(serialArgs<float>& e)
 			break;
 		}
 	}
-	
 }
 
 //--------------------------------------------------------------
@@ -359,6 +442,12 @@ void ofApp::onSensorEvent(serialArgs<bool>& e)
 
 	if (e._param)
 	{
+		if (!_isStartCoin)
+		{
+			//Start Coin Check
+			startCoin();
+		}
+
 		effectMusicMgr::GetInstance()->playerIn(audioType_);
 		visionDisplay::GetInstance()->playerIn(audioType_);
 	}
@@ -368,6 +457,28 @@ void ofApp::onSensorEvent(serialArgs<bool>& e)
 		visionDisplay::GetInstance()->playerOut(audioType_);
 	}
 	
+}
+
+//--------------------------------------------------------------
+void ofApp::keypressCtrl(int key)
+{
+	if (!_motorCtrl)
+	{
+		return;
+	}
+
+	switch (key)
+	{
+		case 'o':
+		case 'c':
+		case 'q':
+		case 'w':
+		case 'e':
+		case 'r':
+		{
+			_ctrlDevice.send(key);
+		}
+	}
 }
 #pragma endregion
 

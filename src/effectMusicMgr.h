@@ -47,10 +47,11 @@ public:
 private:
 	void updateAllPlayer(float fDelta);
 	void addToGroupSet(eAudioType eType, eAudioGroup eGroup);
-	void updateGroupMaxVol(eAudioGroup eGroup);
+	void updateGroupVol(eAudioGroup eGroup);
 private:
 
-	float _groupBlance; // 0.0 : 100% Left, 1.0 100% Right
+	float _groupBlance;
+	float _groupLeftVol, _groupRightVol;
 	map<eAudioType, ofPtr<basicPlayer>> _playerMgr;
 	map<eAudioGroup, vector<eAudioType>> _groupSet;
 #pragma endregion

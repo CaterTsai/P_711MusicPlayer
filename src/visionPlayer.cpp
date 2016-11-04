@@ -42,7 +42,7 @@ void basicVisionPlayer::draw(int x, int y, int width, int height)
 		return;
 	}
 
-	if (_alpha > 0)
+	if (_alpha > 0 && _player.isPlaying())
 	{
 		ofPushStyle();
 		ofSetColor(255, _alpha);

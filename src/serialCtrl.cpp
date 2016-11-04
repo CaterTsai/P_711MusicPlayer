@@ -93,6 +93,26 @@ void serialCtrl::decodeMsg()
 
 #pragma region deviceCtrl
 //--------------------------------------------
+void deviceCtrl::open()
+{
+	send('o');
+	_isOpen = true;
+}
+
+//--------------------------------------------
+void deviceCtrl::close()
+{
+	send('c');
+	_isOpen = false;
+}
+
+//--------------------------------------------
+bool deviceCtrl::isOpen()
+{
+	return _isOpen;
+}
+
+//--------------------------------------------
 void deviceCtrl::decodeMsg()
 {
 	switch (_msg[0])
@@ -160,6 +180,12 @@ void deviceCtrl::sliderEvent()
 #pragma endregion
 
 #pragma region sensorCtrl
+//--------------------------------------------
+void sensorCtrl::reset()
+{
+	//Reset
+	send('r');
+}
 //--------------------------------------------
 void sensorCtrl::decodeMsg()
 {

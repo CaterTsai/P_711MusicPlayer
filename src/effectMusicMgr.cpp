@@ -4,6 +4,9 @@
 void effectMusicMgr::setup()
 {
 	setupEffect();
+
+	_groupBlance = 0.5f;
+	_groupLeftVol = _groupRightVol = 1.0f;
 }
 
 //--------------------------------------------------------------
@@ -160,27 +163,23 @@ void effectMusicMgr::setGroupBalance(float val)
 {
 	_groupBlance = val;
 
-	updateGroupMaxVol(eAudioGroup::eAudioGroup_Left);
-	updateGroupMaxVol(eAudioGroup::eAudioGroup_Right);
+	updateGroupVol(eAudioGroup::eAudioGroup_Left);
+	updateGroupVol(eAudioGroup::eAudioGroup_Right);
 }
 
 //--------------------------------------------------------------
 void effectMusicMgr::setGroupVol(eAudioGroup aGroup, float vol)
 {
 	auto audioList_ = _groupSet[aGroup];
-	float trueVal_ = vol;
 	if (aGroup == eAudioGroup::eAudioGroup_Left)
 	{
-		trueVal_ *= (1.0f - _groupBlance);
+		_groupLeftVol = vol;
+		updateGroupVol(eAudioGroup::eAudioGroup_Left);
 	}
 	else if(aGroup == eAudioGroup::eAudioGroup_Right)
 	{
-		trueVal_ *= _groupBlance;
-	}
-
-	for (auto& iter_ : audioList_)
-	{
-		_playerMgr[iter_]->setMaxVol(trueVal_);
+		_groupRightVol = vol;
+		updateGroupVol(eAudioGroup::eAudioGroup_Right);
 	}
 }
 
@@ -209,22 +208,29 @@ void effectMusicMgr::addToGroupSet(eAudioType eType, eAudioGroup eGroup)
 }
 
 //--------------------------------------------------------------
-void effectMusicMgr::updateGroupMaxVol(eAudioGroup eGroup)
+void effectMusicMgr::updateGroupVol(eAudioGroup eGroup)
 {
 	auto audioList_ = _groupSet[eGroup];
-	float trueVal_ = _playerMgr[audioList_[0]]->getMaxVol();
+	float sourceVol_, Val_;
 	if (eGroup == eAudioGroup::eAudioGroup_Left)
 	{
-		trueVal_ *= (1.0f - _groupBlance);
+		sourceVol_ = _groupLeftVol;
+		Val_ = MIN( (1.0f - _groupBlance)/0.5f, 1.0f);
 	}
 	else if (eGroup == eAudioGroup::eAudioGroup_Right)
 	{
-		trueVal_ *= _groupBlance;
+		sourceVol_ = _groupRightVol;
+		Val_ = MIN(_groupBlance / 0.5f, 1.0f);
 	}
 
+	if (Val_ < 1.0f)
+	{
+		sourceVol_ *= Val_;
+	}
+	
 	for (auto& iter_ : audioList_)
 	{
-		_playerMgr[iter_]->setMaxVol(trueVal_);
+		_playerMgr[iter_]->setMaxVol(sourceVol_);
 	}
 }
 

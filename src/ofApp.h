@@ -21,6 +21,18 @@ public:
 
 private:
 	float _mainTimer;
+	
+
+#pragma region Control
+public:
+	void startCoin();
+	void stopCoin();
+
+private:
+	bool _isStartCoin;
+
+#pragma endregion
+
 
 #pragma region Effect Music Manager
 private:
@@ -36,10 +48,18 @@ private:
 #pragma region Arduino
 public:
 	void setupArduino();
+	void updateArduino(float delta);
+	void drawArduino();
 	void onButtonEvent(serialArgs<bool>& e);
 	void onSliderEvent(serialArgs<float>& e);
 	void onSensorEvent(serialArgs<bool>& e);
+
 private:
+	void keypressCtrl(int key);
+
+private:
+	bool _motorCtrl;
+	float _openCountdown;
 	deviceCtrl	_ctrlDevice;
 	sensorCtrl	_coinSensorLeft, _coinSensorRight;
 #pragma endregion

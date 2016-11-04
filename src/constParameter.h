@@ -81,6 +81,8 @@ const static int cCoinSetNum = 2;
 const static int cCoinNumEachSet = 5;//Each set
 const static int cCoinNum = cCoinNumEachSet * cCoinSetNum;
 
+const static int cMotorCloseTime = 6.0f;
+
 //------------------------------------
 //Disk
 //------------------------------------

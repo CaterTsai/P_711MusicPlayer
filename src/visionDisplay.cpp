@@ -264,7 +264,6 @@ void visionDisplay::drawTutorial()
 }
 #pragma endregion
 
-
 #pragma region Singletion
 //--------------------------------------------------------------
 visionDisplay* visionDisplay::pInstance = 0;

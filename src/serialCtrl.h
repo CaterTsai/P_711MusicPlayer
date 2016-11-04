@@ -50,8 +50,14 @@ public:
 	deviceCtrl()
 		:serialCtrl()
 	{
+		_isOpen = false;
 		ZeroMemory(_isTrigger, sizeof(bool) * cBtnNum);
 	}
+
+	void open();
+	void close();
+	bool isOpen();
+
 private:
 	void decodeMsg() override;
 
@@ -60,6 +66,7 @@ private:
 	void sliderEvent();
 
 private:
+	bool _isOpen;
 	bool _isTrigger[cBtnNum];
 
 //----------------
@@ -79,6 +86,8 @@ public:
 	{
 		ZeroMemory(_isTrigger, sizeof(bool)*cCoinSetNum*cCoinNumEachSet);
 	}
+
+	void reset();
 private:
 
 	void decodeMsg() override;
