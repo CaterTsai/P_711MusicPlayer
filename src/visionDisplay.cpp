@@ -13,14 +13,18 @@ void visionDisplay::update(float delta)
 	updateTutorial();
 	updateBasic();
 	updateAllPlayer(delta);
+	updateFader(delta);
+	updateLoading();
 }
 
 //--------------------------------------------------------------
 void visionDisplay::draw()
-{
-	drawTutorial();
+{	
 	drawBasic();
 	drawAllPlayer(_drawArea.getCenter().x, _drawArea.getCenter().y, _drawArea.getWidth(), _drawArea.getHeight());
+	drawFader();
+	drawLoading();
+	drawTutorial();
 }
 
 //--------------------------------------------------------------
@@ -30,11 +34,79 @@ bool visionDisplay::isPlaying()
 }
 
 //--------------------------------------------------------------
+void visionDisplay::play()
+{
+	_isVisionStart = true;
+	for (auto& Iter_ : _playerMgr)
+	{
+		Iter_.second->play();
+	}
+
+	_basicPlayer.play();
+
+	fadein();
+}
+
+//--------------------------------------------------------------
+void visionDisplay::stop()
+{
+	_isVisionStart = false;
+	for (auto& Iter_ : _playerMgr)
+	{
+		Iter_.second->stop();
+	}
+
+	_basicPlayer.stop();
+	_basicPlayer.setFrame(0);
+	_basicPlayer.update();
+}
+
+
+//--------------------------------------------------------------
 void visionDisplay::setDrawArea(ofVec2f center, int width, int height)
 {
 	_drawArea.setFromCenter(center, width, height);
 }
 #pragma endregion
+
+#pragma region Fader
+//--------------------------------------------------------------
+void visionDisplay::fadeout()
+{
+	_animFadeAlpha.setDuration(cCoinFadeoutTime);
+	_animFadeAlpha.animateFromTo(0, 255);
+}
+
+//--------------------------------------------------------------
+void visionDisplay::fadein()
+{
+	_animFadeAlpha.setDuration(cCoinFadeinTime);
+	_animFadeAlpha.animateFromTo(255, 0);
+}
+
+//--------------------------------------------------------------
+void visionDisplay::updateFader(float delta)
+{
+	if (_animFadeAlpha.isAnimating())
+	{
+		_animFadeAlpha.update(delta);
+	}
+}
+
+//--------------------------------------------------------------
+void visionDisplay::drawFader()
+{
+	ofPushStyle();
+	{
+		ofFill();
+		ofSetColor(255, _animFadeAlpha.getCurrentValue());
+		ofRect(_drawArea);
+	}
+	ofPopStyle();
+}
+
+#pragma endregion
+
 
 #pragma region Basic Video
 //--------------------------------------------------------------
@@ -67,26 +139,11 @@ void visionDisplay::loadBasic(string path)
 	_basicPlayer.loadMovie(path);
 }
 
-//--------------------------------------------------------------
-void visionDisplay::playBasic()
-{
-	_basicPlayer.play();
-}
-
-//--------------------------------------------------------------
-void visionDisplay::stopBasic()
-{
-	_basicPlayer.stop();
-	_basicPlayer.setFrame(0);
-	_basicPlayer.update();
-}
-
-
 #pragma endregion
 
 #pragma region Vision Player
 //--------------------------------------------------------------
-void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string path, int level)
+void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string path, int level, float extendTime)
 {
 	if (_playerMgr.find(eType) == _playerMgr.end())
 	{
@@ -94,7 +151,7 @@ void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string 
 		{
 			case eLoopingPlayer:
 			{
-				_playerMgr.insert(make_pair(eType, ofPtr<loopingVisionPlayer>(new loopingVisionPlayer(level))));
+				_playerMgr.insert(make_pair(eType, ofPtr<loopingVisionPlayer>(new loopingVisionPlayer(level, extendTime))));
 				break;
 			}
 			case eTriggerPlayer:
@@ -104,6 +161,16 @@ void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string 
 			}
 		}
 		_playerMgr[eType]->load(path);
+
+		try
+		{
+			_drawLevel.at(level) = eType;
+		}
+		catch (exception e)
+		{
+			ofLog(OF_LOG_ERROR, "[visionDisplay::addPlayer]Level over!!");
+		}
+		
 	}
 	else
 	{
@@ -111,25 +178,6 @@ void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string 
 	}
 }
 
-//--------------------------------------------------------------
-void visionDisplay::play()
-{
-	_isVisionStart = true;
-	for (auto& Iter_ : _playerMgr)
-	{
-		Iter_.second->play();
-	}
-}
-
-//--------------------------------------------------------------
-void visionDisplay::stop()
-{
-	_isVisionStart = false;
-	for (auto& Iter_ : _playerMgr)
-	{
-		Iter_.second->stop();
-	}
-}
 
 //--------------------------------------------------------------
 bool visionDisplay::getIsPlaying(eAudioType eType)
@@ -206,9 +254,14 @@ void visionDisplay::updateAllPlayer(float delta)
 //--------------------------------------------------------------
 void visionDisplay::drawAllPlayer(int x, int y, int width, int height)
 {
-	for (auto& Iter_ : _playerMgr)
+	//for (auto& Iter_ : _playerMgr)
+	//{
+	//	Iter_.second->draw(x, y, width, height);
+	//}
+
+	for (auto& Iter_ : _drawLevel)
 	{
-		Iter_.second->draw(x, y, width, height);
+		_playerMgr[Iter_]->draw(x, y, width, height);
 	}
 }
 #pragma endregion
@@ -263,6 +316,55 @@ void visionDisplay::drawTutorial()
 	ofPopStyle();
 }
 #pragma endregion
+
+#pragma region loading
+//--------------------------------------------------------------
+void visionDisplay::loadLoading(string path)
+{
+	_loadingPlayer.setPlayer(ofPtr<ofxHapPlayer>(new ofxHapPlayer()));
+	_loadingPlayer.setLoopState(ofLoopType::OF_LOOP_NORMAL);
+
+	_loadingPlayer.loadMovie(path);
+}
+
+//--------------------------------------------------------------
+void visionDisplay::playLoading()
+{
+	_loadingPlayer.play();
+}
+
+//--------------------------------------------------------------
+void visionDisplay::stopLoading()
+{
+	_loadingPlayer.stop();
+}
+
+//--------------------------------------------------------------
+void visionDisplay::updateLoading()
+{
+	if (_loadingPlayer.isLoaded() && _loadingPlayer.isPlaying())
+	{
+		_loadingPlayer.update();
+	}
+}
+
+//--------------------------------------------------------------
+void visionDisplay::drawLoading()
+{
+	if (!_loadingPlayer.isPlaying())
+	{
+		return;
+	}
+
+	ofPushStyle();
+	ofSetColor(255);
+	{
+		_loadingPlayer.draw(_drawArea);
+	}
+	ofPopStyle();
+}
+#pragma endregion
+
 
 #pragma region Singletion
 //--------------------------------------------------------------

@@ -1,18 +1,33 @@
 #pragma once
 
+#include "ofxHttpUtils.h"
 
+//Singleton
 #include "configData.h"
 #include "effectMusicMgr.h"
 #include "visionDisplay.h"
+#include "simulatorKey.h"
 
+//---------------------
+#include "QRPrinter.h"
+#include "serialCtrl.h"
+#include "counter.h"
+#include "ofxCTSystemCaller.h"
+
+
+#ifdef _USE_SIMULATION_
 #include "disk.h"
 #include "buttonArray.h"
-#include "midiParameter.h"
-#include "serialCtrl.h"
+#endif // _USE_SIMULATION_
+
 
 class ofApp : public ofBaseApp {
 
 public:
+	ofApp()
+		:_state(eWaitStart)
+		, _muteBasic(false)
+	{}
 	void setup();
 	void update();
 	void draw();
@@ -21,23 +36,40 @@ public:
 
 private:
 	float _mainTimer;
-	
+	string _userID;
 
 #pragma region Control
 public:
 	void startCoin();
 	void stopCoin();
-
+	void backtoTitle();
 private:
-	bool _isStartCoin;
+	enum eCoinState
+	{
+		eWaitStart = 0
+		,eCoinPlay
+		,eUploading
+	}_state;
 
 #pragma endregion
 
+#pragma region Counter
+public:
+	void setupCounter();
+	void updateCounter(float delta);
+	void drawCounter();
+
+	void onCounterEvent(string& e);
+private:
+	counter	_counter;
+#pragma endregion
 
 #pragma region Effect Music Manager
 private:
 	void loadAllMusic();
 
+private:
+	bool _muteBasic;
 #pragma endregion
 
 #pragma region Vision Display
@@ -63,6 +95,27 @@ private:
 	deviceCtrl	_ctrlDevice;
 	sensorCtrl	_coinSensorLeft, _coinSensorRight;
 #pragma endregion
+
+#pragma region SystemCaller
+public:
+	void onSystemCallFinish(string& msg);
+private:
+	ofxCTSystemCaller	_caller;
+#pragma endregion
+
+#pragma region Uploader
+public:
+	void upload(string name);
+	void httpRespone(ofxHttpResponse& Response);
+private:
+	ofxHttpUtils		_httpConn;
+#pragma endregion
+
+#pragma region QR Printer
+private:
+	qrPrinter	_qrPrinter;
+#pragma endregion
+
 
 #pragma region Simulation
 #ifdef _USE_SIMULATION_

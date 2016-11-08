@@ -13,16 +13,22 @@ public:
 	void setup();
 	void update(float delta);
 	bool isPlaying();
+
+	void play();
+	void stop();
+	void fadeout();
 private:
 	bool _isEffectMusicStart;
+
+	ofxAnimatableFloat	_animMainVol;
 #pragma region Basic Music
 //-------------------
 //Basic Music
 //-------------------
 public:
 	void loadBasic(string path);
-	void playBasic();
-	void stopBasic();
+	void setBasicVol(float vol);
+
 private:
 	ofSoundPlayer	_basicPlayer;
 #pragma endregion
@@ -32,9 +38,7 @@ private:
 //EffectPlayer
 //-------------------
 public:
-	void addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path);
-	void play();
-	void stop();
+	void addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path, float extendTime = 2.0f);
 
 	bool getIsPlaying(eAudioType eType);
 	void playerToggle(eAudioType eType);
@@ -98,7 +102,5 @@ public:
 private:
 	static effectMusicMgr *pInstance;
 #pragma endregion
-
-
 
 };

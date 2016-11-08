@@ -2,7 +2,7 @@
 
 #include "constParameter.h"
 #include "visionPlayer.h"
-
+#include "ofxAnimatableFloat.h"
 
 class visionDisplay
 {
@@ -12,17 +12,29 @@ public:
 	void draw();
 	bool isPlaying();
 
+	void play();
+	void stop();
+
 	void setDrawArea(ofVec2f center, int width, int height);
 
 private:
 	bool _isVisionStart;
 	ofRectangle	_drawArea;
 
+#pragma region Fader
+public:
+	void fadeout();
+	void fadein();
+private:
+	void updateFader(float delta);
+	void drawFader();
+private:
+	ofxAnimatableFloat	_animFadeAlpha;
+#pragma endregion
+
 #pragma region Basic
 public:
 	void loadBasic(string path);
-	void playBasic();
-	void stopBasic();
 
 private:
 	void updateBasic();
@@ -33,9 +45,7 @@ private:
 	
 #pragma region vision Player
 public:
-	void addPlayer(eAudioType eType, ePlayerType ePlayerType, string path, int level);
-	void play();
-	void stop();
+	void addPlayer(eAudioType eType, ePlayerType ePlayerType, string path, int level, float extendTime = 2.0f);
 
 	bool getIsPlaying(eAudioType eType);
 	void playerToggle(eAudioType eType);
@@ -46,17 +56,10 @@ private:
 	void updateAllPlayer(float delta);
 	void drawAllPlayer(int x, int y, int width, int height);
 
-private:
-	struct playerCompare
-	{
-		bool operator()(const loopingVisionPlayer& a, const loopingVisionPlayer& b)
-		{
-			return a.getDrawLevel() < b.getDrawLevel();
-		}
-	};
 
 private:
-	map<eAudioType, ofPtr<basicVisionPlayer>, playerCompare>	_playerMgr;
+	map<eAudioType, ofPtr<basicVisionPlayer>>	_playerMgr;
+	vector<eAudioType> _drawLevel;
 #pragma endregion
 
 #pragma region Tutorial
@@ -65,15 +68,26 @@ public:
 	void playTutorial();
 	void stopTutorial();
 
-private:
-	
+private:	
 	void updateTutorial();
 	void drawTutorial();
 	
 private:
 	ofVideoPlayer	_tutorial;
+#pragma endregion
 
+#pragma region loading
+public:
+	void loadLoading(string path);
+	void playLoading();
+	void stopLoading();
 
+private:
+	void updateLoading();
+	void drawLoading();
+
+private:
+	ofVideoPlayer	_loadingPlayer;
 #pragma endregion
 
 
@@ -86,6 +100,7 @@ private:
 		:_isVisionStart(false)
 	{
 		_drawArea.set(ofVec2f(0, 0), ofGetWidth(), ofGetHeight());
+		_drawLevel.resize(eAudioNum);
 	};
 	~visionDisplay()
 	{
@@ -93,7 +108,6 @@ private:
 	}
 	visionDisplay(visionDisplay const&) {};
 	void operator=(visionDisplay const&) {};
-
 
 public:
 	static visionDisplay* GetInstance();

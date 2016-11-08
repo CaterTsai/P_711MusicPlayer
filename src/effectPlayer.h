@@ -10,6 +10,7 @@ public:
 	{}
 
 	bool load(string path, bool loop = true);
+	virtual void update(float delta) {};
 	virtual void play() {};
 	virtual void stop() {};
 
@@ -27,9 +28,10 @@ protected:
 class loopingPlayer : public basicPlayer
 {
 public:
-	loopingPlayer();
+	loopingPlayer(float extendLength);
 	~loopingPlayer();
 	
+	void update(float delta) override;
 	void play() override;
 	void stop() override;
 	
@@ -42,6 +44,7 @@ public:
 	eFadeState getState() const;
 
 private:
+	float _timer, _extendLength;
 	float _vol, _maxVol;
 	eFadeState _eState;
 

@@ -12,14 +12,58 @@ void effectMusicMgr::setup()
 //--------------------------------------------------------------
 void effectMusicMgr::update(float delta)
 {
+	_animMainVol.update(delta);
+
 	updateAllPlayer(delta);
 	updateEffect(delta);
+
+	if (_animMainVol.isAnimating())
+	{
+		ofSoundSetVolume(_animMainVol.getCurrentValue());
+	}
 }
 
 //--------------------------------------------------------------
 bool effectMusicMgr::isPlaying()
 {
 	return _isEffectMusicStart;
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::play()
+{
+	_animMainVol.setDuration(cCoinFadeinTime);
+	_animMainVol.animateFromTo(0.0, 1.0);
+
+	_isEffectMusicStart = true;
+	for (auto& Iter_ : _playerMgr)
+	{
+		Iter_.second->play();
+	}
+
+	if (_basicPlayer.isLoaded())
+	{
+		_basicPlayer.play();
+	}
+	ofSoundSetVolume(0.0f);
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::stop()
+{
+	_isEffectMusicStart = false;
+	for (auto& Iter_ : _playerMgr)
+	{
+		Iter_.second->stop();
+	}
+	_basicPlayer.stop();
+}
+
+//--------------------------------------------------------------
+void effectMusicMgr::fadeout()
+{
+	_animMainVol.setDuration(cCoinFadeinTime);
+	_animMainVol.animateFromTo(1.0, 0.0);
 }
 
 #pragma region Basic Music
@@ -31,15 +75,9 @@ void effectMusicMgr::loadBasic(string path)
 }
 
 //--------------------------------------------------------------
-void effectMusicMgr::playBasic()
+void effectMusicMgr::setBasicVol(float vol)
 {
-	_basicPlayer.play();
-}
-
-//--------------------------------------------------------------
-void effectMusicMgr::stopBasic()
-{
-	_basicPlayer.stop();
+	_basicPlayer.setVolume(vol);
 }
 #pragma endregion
 
@@ -47,7 +85,7 @@ void effectMusicMgr::stopBasic()
 //-------------------
 //EffectPlayer
 //-------------------
-void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path)
+void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType ePType, string path, float extendTime)
 {
 	if (_playerMgr.find(eType) == _playerMgr.end())
 	{
@@ -55,7 +93,7 @@ void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType
 		{
 			case eLoopingPlayer:
 			{
-				_playerMgr.insert(make_pair(eType, ofPtr<loopingPlayer>(new loopingPlayer())));
+				_playerMgr.insert(make_pair(eType, ofPtr<loopingPlayer>(new loopingPlayer(extendTime))));
 				break;
 			}
 			case eTriggerPlayer:
@@ -72,26 +110,6 @@ void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType
 	else
 	{
 		ofLog(OF_LOG_ERROR, "[effectMusic]This audio type already exist");
-	}
-}
-
-//--------------------------------------------------------------
-void effectMusicMgr::play()
-{
-	_isEffectMusicStart = true;
-	for (auto& Iter_ : _playerMgr)
-	{
-		Iter_.second->play();
-	}
-}
-
-//--------------------------------------------------------------
-void effectMusicMgr::stop()
-{
-	_isEffectMusicStart = false;
-	for (auto& Iter_ : _playerMgr)
-	{
-		Iter_.second->stop();
 	}
 }
 
@@ -188,7 +206,7 @@ void effectMusicMgr::updateAllPlayer(float fDelta)
 {
 	for (auto& Iter_ : _playerMgr)
 	{
-		//Iter_.second.update(fDelta);
+		Iter_.second->update(fDelta);
 	}
 }
 

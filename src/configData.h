@@ -3,6 +3,17 @@
 #include "constParameter.h"
 #include "ofxXmlSettings.h"
 
+class channelData
+{
+public:
+	eAudioType _type;
+	ePlayerType _playerType;
+	eAudioGroup	_audioGroup;
+	float _extendTime;
+	string _name;
+	int _level;
+};
+
 class config
 {
 public:
@@ -13,7 +24,8 @@ public:
 	string videoPath;
 	string devicePort;
 	string sensorLeftPort, sensorRightPort;
-
+	
+	vector<channelData> channelData;
 
 
 private:
@@ -21,8 +33,6 @@ private:
 	~config(){}
 	config(config const&) {};
 	void operator=(config const&) {};
-
-
 
 public:
 	static config* GetInstance();

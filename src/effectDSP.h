@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxAnimatableFloat.h";
+#include "ofxAnimatableFloat.h"
 
 #include "fmod.hpp"
 

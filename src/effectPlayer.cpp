@@ -19,12 +19,14 @@ bool basicPlayer::load(string path, bool loop)
 #pragma region loopingPlayer
 #pragma region Basic
 //--------------------------------------------------------------
-loopingPlayer::loopingPlayer()
+loopingPlayer::loopingPlayer(float extendLength)
 	:basicPlayer()
 	,_eState(eStateWait)
 	,_vol(1.0f)
 	,_maxVol(1.0f)
-{}
+	,_extendLength(extendLength)
+{
+}
 
 //--------------------------------------------------------------
 loopingPlayer::~loopingPlayer()
@@ -33,6 +35,21 @@ loopingPlayer::~loopingPlayer()
 #pragma endregion
 
 #pragma region Control
+//--------------------------------------------------------------
+void loopingPlayer::update(float delta)
+{
+	if (_eState == eStateExtend)
+	{
+		_timer -= delta;
+		if (_timer <= 0.0f)
+		{
+			_vol = 0.0;
+			_player.setVolume(_vol);
+			_eState = eStateWait;
+		}
+	}
+}
+
 //--------------------------------------------------------------
 void loopingPlayer::play()
 {
@@ -70,9 +87,11 @@ void loopingPlayer::out()
 {
 	if (_player.getIsPlaying())
 	{
-		_vol = 0.0;
-		_player.setVolume(_vol);
-		_eState = eStateWait;
+		if (_eState == eStatePlay)
+		{
+			_eState = eStateExtend;
+			_timer = _extendLength;
+		}
 	}
 }
 

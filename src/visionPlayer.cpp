@@ -4,6 +4,7 @@
 //--------------------------------------------------------------
 basicVisionPlayer::basicVisionPlayer(int drawLevel)
 	:_drawLevel(drawLevel)
+	, _alpha(0.0f)
 {}
 
 //--------------------------------------------------------------
@@ -42,7 +43,7 @@ void basicVisionPlayer::draw(int x, int y, int width, int height)
 		return;
 	}
 
-	if (_alpha > 0 && _player.isPlaying())
+	if (_alpha > 0 && isPlaying())
 	{
 		ofPushStyle();
 		ofSetColor(255, _alpha);
@@ -65,8 +66,9 @@ int basicVisionPlayer::getDrawLevel() const
 
 #pragma region loopingVisionPlayer
 //--------------------------------------------------------------
-loopingVisionPlayer::loopingVisionPlayer(int drawLevel)
+loopingVisionPlayer::loopingVisionPlayer(int drawLevel, float extendLength)
 	:_eState(eStateWait)
+	, _extendLength(extendLength)
 	,basicVisionPlayer(drawLevel)
 {
 }
@@ -75,6 +77,22 @@ loopingVisionPlayer::loopingVisionPlayer(int drawLevel)
 loopingVisionPlayer::~loopingVisionPlayer()
 {
 	_player.close();
+}
+
+//--------------------------------------------------------------
+void loopingVisionPlayer::update(float delta)
+{
+	basicVisionPlayer::update(delta);
+	
+	if (_eState == eFadeState::eStateExtend)
+	{
+		_timer -= delta;
+		if (_timer <= 0.0f)
+		{
+			_alpha = 0.0;
+			_eState = eStateWait;
+		}
+	}
 }
 
 //--------------------------------------------------------------
@@ -93,6 +111,7 @@ void loopingVisionPlayer::stop()
 	if (_player.isPlaying())
 	{
 		_player.stop();
+		_alpha = 0.0f;
 	}
 }
 
@@ -111,15 +130,18 @@ void loopingVisionPlayer::out()
 {
 	if (_player.isPlaying())
 	{
-		_alpha = 0.0;
-		_eState = eStateWait;
+		if (_eState == eStatePlay)
+		{
+			_eState = eStateExtend;
+			_timer = _extendLength;
+		}	
 	}
 }
 
 //--------------------------------------------------------------
 bool loopingVisionPlayer::isPlaying()
 {
-	return (_eState == eStatePlay);
+	return (_eState != eStateWait);
 }
 
 //--------------------------------------------------------------
@@ -149,12 +171,16 @@ void triggerVisionPlayer::stop()
 	{
 		_player.stop();
 	}
-	_isStart = true;
+	_isStart = false;
 }
 
 //--------------------------------------------------------------
 void triggerVisionPlayer::in()
 {	
+	if (!_isStart)
+	{
+		return;
+	}
 	_player.play();
 	_alpha = 255.0f;
 }
@@ -162,6 +188,10 @@ void triggerVisionPlayer::in()
 //--------------------------------------------------------------
 void triggerVisionPlayer::out()
 {
+	if (!_isStart)
+	{
+		return;
+	}
 	_player.stop();
 	_player.setFrame(0);
 	_player.update();
