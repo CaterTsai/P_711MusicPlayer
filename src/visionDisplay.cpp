@@ -10,11 +10,9 @@ void visionDisplay::setup(ofVec2f center, int width, int height)
 //--------------------------------------------------------------
 void visionDisplay::update(float delta)
 {
-	updateTutorial();
 	updateBasic();
 	updateAllPlayer(delta);
 	updateFader(delta);
-	updateLoading();
 }
 
 //--------------------------------------------------------------
@@ -23,8 +21,6 @@ void visionDisplay::draw()
 	drawBasic();
 	drawAllPlayer(_drawArea.getCenter().x, _drawArea.getCenter().y, _drawArea.getWidth(), _drawArea.getHeight());
 	drawFader();
-	drawLoading();
-	drawTutorial();
 }
 
 //--------------------------------------------------------------
@@ -107,7 +103,6 @@ void visionDisplay::drawFader()
 
 #pragma endregion
 
-
 #pragma region Basic Video
 //--------------------------------------------------------------
 void visionDisplay::updateBasic()
@@ -152,15 +147,17 @@ void visionDisplay::addPlayer(eAudioType eType, ePlayerType ePlayerType, string 
 			case eLoopingPlayer:
 			{
 				_playerMgr.insert(make_pair(eType, ofPtr<loopingVisionPlayer>(new loopingVisionPlayer(level, extendTime))));
+				_playerMgr[eType]->load(path);
 				break;
 			}
 			case eTriggerPlayer:
 			{
 				_playerMgr.insert(make_pair(eType, ofPtr<triggerVisionPlayer>(new triggerVisionPlayer(level))));
+				_playerMgr[eType]->load(path, false);
 				break;
 			}
 		}
-		_playerMgr[eType]->load(path);
+		
 
 		try
 		{
@@ -265,106 +262,6 @@ void visionDisplay::drawAllPlayer(int x, int y, int width, int height)
 	}
 }
 #pragma endregion
-
-#pragma region Tutorial
-//--------------------------------------------------------------
-void visionDisplay::loadTutorial(string path)
-{
-	_tutorial.setPlayer(ofPtr<ofxHapPlayer>(new ofxHapPlayer()));
-	_tutorial.setLoopState(ofLoopType::OF_LOOP_NORMAL);
-
-	_tutorial.loadMovie(path);
-}
-
-//--------------------------------------------------------------
-void visionDisplay::playTutorial()
-{
-	
-	_tutorial.play();
-}
-
-//--------------------------------------------------------------
-void visionDisplay::stopTutorial()
-{
-	_tutorial.stop();
-	_tutorial.setFrame(0);
-	_tutorial.update();
-}
-
-//--------------------------------------------------------------
-void visionDisplay::updateTutorial()
-{
-	if (_tutorial.isLoaded() && _tutorial.isPlaying())
-	{
-		_tutorial.update();
-	}
-}
-
-//--------------------------------------------------------------
-void visionDisplay::drawTutorial()
-{
-	if (!_tutorial.isPlaying())
-	{
-		return;
-	}
-
-	ofPushStyle();
-	ofSetColor(255);
-	{
-		_tutorial.draw(_drawArea);
-	}
-	ofPopStyle();
-}
-#pragma endregion
-
-#pragma region loading
-//--------------------------------------------------------------
-void visionDisplay::loadLoading(string path)
-{
-	_loadingPlayer.setPlayer(ofPtr<ofxHapPlayer>(new ofxHapPlayer()));
-	_loadingPlayer.setLoopState(ofLoopType::OF_LOOP_NORMAL);
-
-	_loadingPlayer.loadMovie(path);
-}
-
-//--------------------------------------------------------------
-void visionDisplay::playLoading()
-{
-	_loadingPlayer.play();
-}
-
-//--------------------------------------------------------------
-void visionDisplay::stopLoading()
-{
-	_loadingPlayer.stop();
-}
-
-//--------------------------------------------------------------
-void visionDisplay::updateLoading()
-{
-	if (_loadingPlayer.isLoaded() && _loadingPlayer.isPlaying())
-	{
-		_loadingPlayer.update();
-	}
-}
-
-//--------------------------------------------------------------
-void visionDisplay::drawLoading()
-{
-	if (!_loadingPlayer.isPlaying())
-	{
-		return;
-	}
-
-	ofPushStyle();
-	ofSetColor(255);
-	{
-		_loadingPlayer.draw(_drawArea);
-	}
-	ofPopStyle();
-}
-#pragma endregion
-
 
 #pragma region Singletion
 //--------------------------------------------------------------

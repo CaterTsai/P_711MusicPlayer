@@ -62,35 +62,6 @@ private:
 	vector<eAudioType> _drawLevel;
 #pragma endregion
 
-#pragma region Tutorial
-public:
-	void loadTutorial(string path);
-	void playTutorial();
-	void stopTutorial();
-
-private:	
-	void updateTutorial();
-	void drawTutorial();
-	
-private:
-	ofVideoPlayer	_tutorial;
-#pragma endregion
-
-#pragma region loading
-public:
-	void loadLoading(string path);
-	void playLoading();
-	void stopLoading();
-
-private:
-	void updateLoading();
-	void drawLoading();
-
-private:
-	ofVideoPlayer	_loadingPlayer;
-#pragma endregion
-
-
 #pragma region Singleton
 	//-------------------
 	//Singleton

@@ -1,51 +1,25 @@
 #include "counter.h"
 
 ofEvent <string> counter::_countEvent;
+
 //--------------------------------------------------------------
-void counter::setup(const string numberfolder)
+void counter::loadFont(string fontPath)
 {
-	if (_isSetup)
-	{
-		ofLog(OF_LOG_ERROR, "[counter::setup]Already setup");
-	}
-
-	_numImgList.resize(10);
-
-	ofDirectory dir_(numberfolder);
-	dir_.allowExt("png");
-	dir_.listDir();
-
-	if (dir_.numFiles() == 10)
-	{
-		for (int idx_ = 0; idx_ < dir_.numFiles(); ++idx_)
-		{
-			ofImage img_;
-			img_.loadImage(dir_.getPath(idx_));
-			_numImgList[idx_] = img_;
-
-			_numWidth = MAX(img_.getWidth(), _numWidth);
-			_numHeight = MAX(img_.getHeight(), _numHeight);
-		}
-	}
-	else
-	{
-		ofLog(OF_LOG_ERROR, "[counter::setup]Load number failed");
-		return;
-	}
-	_isSetup = true;
+	ofTrueTypeFont::setGlobalDpi(72);
+	_font.loadFont(fontPath, cCounterFontSize, true, true);
 }
 
 //--------------------------------------------------------------
 void counter::update(const float delta)
 {
-	if (!_isSetup || !_isStart)
+	if (!_isStart)
 	{
 		return;
 	}
 
-	_counterTimer -= delta;
+	_counterTimer += delta;
 	updateCounterEvent();
-	if (_counterTimer <= 0.0f)
+	if (_counterTimer >= _targetTime)
 	{
 		_isStart = false;
 	}
@@ -54,58 +28,63 @@ void counter::update(const float delta)
 }
 
 //--------------------------------------------------------------
-void counter::draw(ofVec2f pos)
+void counter::draw(ofRectangle rect)
 {
-	if (!_isSetup || !_isStart)
+	if (!_isStart)
 	{
-		return;
-	}
-
-	int integerTime_ = static_cast<int>(ceil(_counterTimer)) % 100; //0~99
-	int tens_ = static_cast<int>(integerTime_ / 10.0f);
-	int ones_ = integerTime_ % 10;
-	
-	if (tens_ < 0 || tens_ >= 10 || ones_ < 0 || ones_ >= 10)
-	{
-		ofLog(OF_LOG_ERROR, "[counter::draw]Out of range. Tens:%d Ones:%d", tens_, ones_);
 		return;
 	}
 
 	ofPushStyle();
-	ofSetColor(255);
-	ofPushMatrix();
-	ofTranslate(pos);
 	{
-		
-		if (tens_ != 0)
-		{
-			//TENS
-			_numImgList[tens_].draw(-_numWidth, _numImgList[tens_].getHeight() * -0.5);
+		//Background
+		ofSetColor(255);
+		ofFill();
+		ofRect(rect);
 
-			//ONES
-			_numImgList[ones_].draw(0, _numImgList[ones_].getHeight() * -0.5);
-		}
-		else
+		ofSetColor(43, 170, 63);
+		ofNoFill();
+		ofSetLineWidth(1.0);
+		ofRect(rect);
+
+		//Bar
+		float percentage_ = _counterTimer / _targetTime;
+		float barLength_ = rect.width * percentage_;
+		ofSetColor(43, 170, 63);
+		ofFill();
+		ofRect(rect.position, barLength_, rect.height);
+
+		//Text
+		ofSetColor(255);
+		if (_font.isLoaded())
 		{
-			//ONES
-			_numImgList[ones_].draw(_numImgList[ones_].getWidth() * -0.5, _numImgList[ones_].getHeight() * -0.5);
+			ofVec2f fontPos_ = rect.position;
+			string val_ = ofToString(static_cast<int>(percentage_ * 100.0f + 0.5f)) + "%";
+			auto fontRect_ = _font.getStringBoundingBox(val_, 0, 0);
+			fontRect_.width *= 1.1;
+
+			if (fontRect_.getWidth() < barLength_)
+			{
+				fontPos_.x += (barLength_ - fontRect_.getWidth());
+				fontPos_.y += rect.height * 0.5 + fontRect_.getHeight() / 2;
+
+				_font.drawString(val_, fontPos_.x, fontPos_.y);
+			}
 		}
-		
 	}
-	ofPopMatrix();
 	ofPopStyle();
 }
 
 //--------------------------------------------------------------
 void counter::start(float time)
 {
-	if (!_isSetup || _isStart)
+	if (_isStart)
 	{
 		return;
 	}
 
 	_isStart = true;
-	_counterTimer = time;
+	_counterTimer = 0.0;
 	_targetTime = time;
 
 	resetCounterEvent();
@@ -114,7 +93,7 @@ void counter::start(float time)
 //--------------------------------------------------------------
 void counter::stop()
 {
-	if (!_isSetup || !_isStart)
+	if (!_isStart)
 	{
 		return;
 	}

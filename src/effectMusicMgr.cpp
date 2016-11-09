@@ -19,7 +19,11 @@ void effectMusicMgr::update(float delta)
 
 	if (_animMainVol.isAnimating())
 	{
-		ofSoundSetVolume(_animMainVol.getCurrentValue());
+		setGroupVol(eAudioGroup::eAudioGroup_Left, _animMainVol.getCurrentValue());
+		setGroupVol(eAudioGroup::eAudioGroup_Right, _animMainVol.getCurrentValue());
+		setGroupVol(eAudioGroup::eAudioGroup_Button, _animMainVol.getCurrentValue());
+		setBasicVol(_animMainVol.getCurrentValue());
+		//ofSoundSetVolume(_animMainVol.getCurrentValue());
 	}
 }
 
@@ -45,7 +49,8 @@ void effectMusicMgr::play()
 	{
 		_basicPlayer.play();
 	}
-	ofSoundSetVolume(0.0f);
+	//ofSoundSetVolume(0.0f);
+
 }
 
 //--------------------------------------------------------------
@@ -94,17 +99,16 @@ void effectMusicMgr::addPlayer(eAudioType eType, eAudioGroup eGroup, ePlayerType
 			case eLoopingPlayer:
 			{
 				_playerMgr.insert(make_pair(eType, ofPtr<loopingPlayer>(new loopingPlayer(extendTime))));
+				_playerMgr[eType]->load(path);
 				break;
 			}
 			case eTriggerPlayer:
 			{
 				_playerMgr.insert(make_pair(eType, ofPtr<triggerPlayer>(new triggerPlayer())));
+				_playerMgr[eType]->load(path, false);
 				break;
 			}
 		}
-		
-		_playerMgr[eType]->load(path);
-
 		addToGroupSet(eType, eGroup);
 	}
 	else
@@ -189,15 +193,9 @@ void effectMusicMgr::setGroupBalance(float val)
 void effectMusicMgr::setGroupVol(eAudioGroup aGroup, float vol)
 {
 	auto audioList_ = _groupSet[aGroup];
-	if (aGroup == eAudioGroup::eAudioGroup_Left)
+	for (auto& iter_ : audioList_)
 	{
-		_groupLeftVol = vol;
-		updateGroupVol(eAudioGroup::eAudioGroup_Left);
-	}
-	else if(aGroup == eAudioGroup::eAudioGroup_Right)
-	{
-		_groupRightVol = vol;
-		updateGroupVol(eAudioGroup::eAudioGroup_Right);
+		_playerMgr[iter_]->setMaxVol(vol);
 	}
 }
 
@@ -259,18 +257,15 @@ void effectMusicMgr::updateGroupVol(eAudioGroup eGroup)
 //--------------------------------------------------------------
 void effectMusicMgr::setupEffect()
 {
-	ofPtr<effectDSP> echo_ = ofPtr<effectDSP>(new echoDSP());
-	echo_->setup(FMOD_DSP_TYPE_ECHO);
 
 	ofPtr<effectDSP> distortion_ = ofPtr<effectDSP>(new distortionDSP());
 	distortion_->setup(FMOD_DSP_TYPE_DISTORTION);
 
-	ofPtr<effectDSP> lowpass_ = ofPtr<effectDSP>(new lowpassDSP());
-	lowpass_->setup(FMOD_DSP_TYPE_LOWPASS);
+	ofPtr<effectDSP> pitchshift = ofPtr<effectDSP>(new pitchShifterDSP());
+	pitchshift->setup(FMOD_DSP_TYPE_PITCHSHIFT);
 
-	_effectMgr.insert(make_pair(eEffect_Echo, echo_));
 	_effectMgr.insert(make_pair(eEffect_Distortion, distortion_));
-	_effectMgr.insert(make_pair(eEffect_LowPass, lowpass_));
+	_effectMgr.insert(make_pair(eEffect_PitchShift, pitchshift));
 
 	//FMOD::Reverb3D
 	FMOD_REVERB_PROPERTIES prop = FMOD_PRESET_AUDITORIUM;

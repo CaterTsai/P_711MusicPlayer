@@ -103,3 +103,13 @@ void lowpassDSP::update(float delta)
 	}
 }
 #pragma endregion
+
+#pragma region pitchShifterDSP
+//--------------------------------------------------------------
+void pitchShifterDSP::initialDSP()
+{
+	_dspEffect->setParameterFloat(FMOD_DSP_PITCHSHIFT_PITCH, 0.7);
+}
+
+
+#pragma endregion

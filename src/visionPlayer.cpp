@@ -14,10 +14,10 @@ basicVisionPlayer::~basicVisionPlayer()
 }
 
 //--------------------------------------------------------------
-bool basicVisionPlayer::load(string path)
+bool basicVisionPlayer::load(string path, bool loop)
 {
 	_player.setPlayer(ofPtr<ofxHapPlayer>(new ofxHapPlayer()));
-	_player.setLoopState(ofLoopType::OF_LOOP_NORMAL);
+	loop?_player.setLoopState(ofLoopType::OF_LOOP_NORMAL): _player.setLoopState(ofLoopType::OF_LOOP_NONE);
 	if (!_player.loadMovie(path))
 	{
 		ofLog(OF_LOG_ERROR, "[loopingVisionPlayer]load video failed : " + path);
@@ -158,6 +158,16 @@ triggerVisionPlayer::triggerVisionPlayer(int drawLevel)
 {
 
 }
+
+//--------------------------------------------------------------
+void triggerVisionPlayer::update(float delta)
+{
+	basicVisionPlayer::update(delta);
+	if (_player.isPlaying() && _player.getIsMovieDone())
+	{
+		_alpha = 0.0f;
+	}
+}
 //--------------------------------------------------------------
 void triggerVisionPlayer::play()
 {
@@ -181,6 +191,8 @@ void triggerVisionPlayer::in()
 	{
 		return;
 	}
+	_player.setFrame(0);
+	_player.update();
 	_player.play();
 	_alpha = 255.0f;
 }

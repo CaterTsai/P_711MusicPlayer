@@ -13,7 +13,7 @@
 #include "serialCtrl.h"
 #include "counter.h"
 #include "ofxCTSystemCaller.h"
-
+#include "videoMgr.h"
 
 #ifdef _USE_SIMULATION_
 #include "disk.h"
@@ -62,6 +62,14 @@ public:
 	void onCounterEvent(string& e);
 private:
 	counter	_counter;
+#pragma endregion
+
+#pragma region VideoMgr
+public:
+	void setupVideoMgr();
+	void onVideoDone(eVideoType &eType);
+private:
+	videoMgr _videoMgr;
 #pragma endregion
 
 #pragma region Effect Music Manager
@@ -115,7 +123,6 @@ private:
 private:
 	qrPrinter	_qrPrinter;
 #pragma endregion
-
 
 #pragma region Simulation
 #ifdef _USE_SIMULATION_

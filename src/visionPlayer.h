@@ -9,7 +9,7 @@ public:
 	basicVisionPlayer(int drawLevel = 0);
 	~basicVisionPlayer();
 
-	bool load(string path);
+	bool load(string path, bool loop = true);
 	virtual void update(float delta);
 	void draw(int x, int y, int width, int height);
 	int getDrawLevel() const;
@@ -55,6 +55,8 @@ class triggerVisionPlayer : public basicVisionPlayer
 {
 public:
 	triggerVisionPlayer(int drawLevel = 0);
+
+	void update(float delta) override;
 	void play() override;
 	void stop() override;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ofMain.h"
+#include "constParameter.h"
 
 class counterEvent
 {
@@ -18,7 +18,7 @@ public:
 			return false;
 		}
 
-		if (time <= _time)
+		if (time >= _time)
 		{
 			_isCheck = true;
 			return true;
@@ -47,26 +47,22 @@ class counter
 {
 public:
 	counter()
-		:_isSetup(false)
-		, _isStart(false)
-		, _numWidth(0)
-		, _numHeight(0)
+		:_isStart(false)
 		, _counterTimer(0)
 		, _targetTime(0)
 	{}
-	void setup(const string numberfolder);
+
+	void loadFont(string fontPath);
 	void update(const float delta);
-	void draw(ofVec2f pos);
+	void draw(ofRectangle rect);
 
 	void start(float time);
 	void stop();
 
 private:
-	bool _isSetup, _isStart;
+	bool _isStart;
 	float _counterTimer,_targetTime;
-
-	vector<ofImage> _numImgList;
-	float _numWidth, _numHeight;
+	ofTrueTypeFont	_font;
 
 //-------------------------
 //Counter Event

@@ -3,12 +3,19 @@
 //--------------------------------------------------------------
 void ofApp::setup()
 {
+#ifndef _DEBUG
+	ofToggleFullscreen();
+#endif // _DEBUG
+
 	config::GetInstance()->load("_config.xml");
 	loadAllMusic();
 	loadAllVideo();
 
 	//Counter
 	setupCounter();
+
+	//VideoMgr
+	setupVideoMgr();
 
 	//Arduino
 	setupArduino();
@@ -30,11 +37,10 @@ void ofApp::setup()
 
 	ofBackground(0);
 	ofSetVerticalSync(true);
-	
-#ifndef _DEBUG
-	ofToggleFullscreen();
-#endif // _DEBUG	
 
+
+
+	_videoMgr.play(eVideoType::eVideoTutorial);
 	_mainTimer = ofGetElapsedTimef();
 }
 
@@ -51,6 +57,7 @@ void ofApp::update(){
 	_coinSensorLeft.update();
 	_coinSensorRight.update();
 
+	_videoMgr.update(delta_);
 	updateCounter(delta_);
 	updateArduino(delta_);
 
@@ -64,13 +71,15 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-	visionDisplay::GetInstance()->draw();
-	drawCounter();
-	drawArduino();
-
 #ifdef _USE_SIMULATION_
 	drawSimulation();
 #endif // _USE_SIMULATION_
+
+	visionDisplay::GetInstance()->draw();	
+	_videoMgr.draw();
+
+	drawCounter();
+	drawArduino();
 }
 
 //--------------------------------------------------------------
@@ -78,7 +87,6 @@ void ofApp::exit()
 {
 	simulatorKey::GetInstance()->sendKey(cEndRocodeKey);
 	_caller.stop();
-	
 }
 
 //--------------------------------------------------------------
@@ -106,29 +114,30 @@ void ofApp::keyPressed(int key)
 	//Button Audio
 	case 'h':
 	{
-		effectMusicMgr::GetInstance()->playerToggle(eAudioType::eCenter_Button_1);
-		visionDisplay::GetInstance()->playerToggle(eAudioType::eCenter_Button_1);
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
 		break;
 	}
 	case 'j':
 	{
-		effectMusicMgr::GetInstance()->playerToggle(eAudioType::eCenter_Button_2);
-		visionDisplay::GetInstance()->playerToggle(eAudioType::eCenter_Button_2);
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
 		break;
 	}
 	case 'k':
 	{
-		effectMusicMgr::GetInstance()->playerToggle(eAudioType::eCenter_Button_3);
-		visionDisplay::GetInstance()->playerToggle(eAudioType::eCenter_Button_3);
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
+		break;
+	}
+	case 'b':
+	{
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
 		break;
 	}
 
 	//Button Effect
-	case 'b':
-	{
-		effectMusicMgr::GetInstance()->troggleEffect(eEffect_Echo);
-		break;
-	}
 	case 'n':
 	{
 		effectMusicMgr::GetInstance()->troggleEffect(eEffect_Distortion);
@@ -136,7 +145,7 @@ void ofApp::keyPressed(int key)
 	}
 	case 'm':
 	{
-		effectMusicMgr::GetInstance()->troggleEffect(eEffect_LowPass);
+		effectMusicMgr::GetInstance()->troggleEffect(eEffect_PitchShift);
 		break;
 	}
 
@@ -190,7 +199,7 @@ void ofApp::startCoin()
 	{
 		return;
 	}
-	visionDisplay::GetInstance()->stopTutorial();
+	_videoMgr.stop();
 
 	visionDisplay::GetInstance()->play();
 	effectMusicMgr::GetInstance()->play();
@@ -214,15 +223,14 @@ void ofApp::stopCoin()
 
 
 #ifndef _USE_SIMULATION_
-	visionDisplay::GetInstance()->playLoading();
+	_videoMgr.play(eVideoType::eVideoUploading);
 
 	_openCountdown = cMotorCloseTime;
 	_ctrlDevice.open();
 	_counter.stop();
 	_state = eCoinState::eUploading;
 #else //_USE_SIMULATION_
-	visionDisplay::GetInstance()->stopLoading();
-	visionDisplay::GetInstance()->playTutorial();
+	_videoMgr.play(eVideoType::eVideoTutorial);
 	_state = eCoinState::eWaitStart;
 #endif // !_USE_SIMULATION_
 }
@@ -234,21 +242,24 @@ void ofApp::backtoTitle()
 	{
 		return;
 	}
-	visionDisplay::GetInstance()->stopLoading();
-	visionDisplay::GetInstance()->playTutorial();
+	_videoMgr.play(eVideoType::eVideoTutorial);
 	_state = eCoinState::eWaitStart;
 }
 #pragma endregion
 
-#pragma region Countdown
+#pragma region Counter
 //--------------------------------------------------------------
 void ofApp::setupCounter()
 {
-	_counter.setup("CountdownNum/");
+	_counter.addCounterEvent(cShowHits, NAME_MGR::CEvent_ShowHint);
+	_counter.addCounterEvent(cHideHits, NAME_MGR::CEvent_HideHint);
+
 	_counter.addCounterEvent(cStartRecode, NAME_MGR::CEvent_StartRecode);
 	_counter.addCounterEvent(cEndRecode, NAME_MGR::CEvent_EndRecode);
 	_counter.addCounterEvent(cTriggerCoinFadeout, NAME_MGR::CEvent_StartFadeout);
-	_counter.addCounterEvent(0.0f, NAME_MGR::CEvent_CounterFinish);
+	_counter.addCounterEvent(cEndingTime, NAME_MGR::CEvent_StartEnding);
+
+	_counter.loadFont("font/ARIALNB.TTF");
 
 	ofAddListener(_counter._countEvent, this, &ofApp::onCounterEvent);
 }
@@ -262,13 +273,21 @@ void ofApp::updateCounter(float delta)
 //--------------------------------------------------------------
 void ofApp::drawCounter()
 {
-	_counter.draw(cCountdownPos);
+	_counter.draw(cCounterRect);
 }
 
 //--------------------------------------------------------------
 void ofApp::onCounterEvent(string& e)
 {
-	if (e == NAME_MGR::CEvent_StartRecode)
+	if (e == NAME_MGR::CEvent_ShowHint)
+	{
+		_videoMgr.play(eVideoType::eVideoHints);
+	}
+	else if (e == NAME_MGR::CEvent_HideHint)
+	{
+		_videoMgr.stop();
+	}
+	else if (e == NAME_MGR::CEvent_StartRecode)
 	{
 		simulatorKey::GetInstance()->sendKey(cStartRocodeKey);
 	}
@@ -281,18 +300,44 @@ void ofApp::onCounterEvent(string& e)
 		effectMusicMgr::GetInstance()->fadeout();
 		visionDisplay::GetInstance()->fadeout();
 	}
-	else if (e == NAME_MGR::CEvent_CounterFinish)
+	else if (e == NAME_MGR::CEvent_StartEnding)
 	{
-		stopCoin();
-
-		//
-		_userID = ofGetTimestampString("%m%d%H%M");
-		_caller.addCMD(cCmd_MixVideo + _userID, NAME_MGR::SCEvent_MixVideo);
-		_caller.signal();
+		_videoMgr.play(eVideoType::eVideoEnding, false);
 	}
 	else
 	{
 		ofLog(OF_LOG_WARNING, "[ofApp::onCounterEvent]Unknow event type");
+	}
+}
+#pragma endregion
+
+#pragma region VideoMgr
+//--------------------------------------------------------------
+void ofApp::setupVideoMgr()
+{
+#ifdef _USE_SIMULATION_
+	_videoMgr.setDrawArea(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.25), ofGetWidth() * 0.5, ofGetHeight() * 0.5);
+#endif // _USE_SIMULATION_
+
+	
+	_videoMgr.addVideo(eVideoType::eVideoTutorial, "videos/tutorial.mov");
+	_videoMgr.addVideo(eVideoType::eVideoHints, "videos/hits.mov");
+	_videoMgr.addVideo(eVideoType::eVideoUploading, "videos/loading.mov");
+	_videoMgr.addVideo(eVideoType::eVideoEnding, "videos/ending.mov");
+
+	ofAddListener(_videoMgr._onVideoDone, this, &ofApp::onVideoDone);
+}
+
+//--------------------------------------------------------------
+void ofApp::onVideoDone(eVideoType & eType)
+{
+	if (eType == eVideoType::eVideoEnding)
+	{
+		stopCoin();
+		
+		_userID = ofGetTimestampString("%m%d%H%M");
+		_caller.addCMD(cCmd_MixVideo + _userID, NAME_MGR::SCEvent_MixVideo);
+		_caller.signal();
 	}
 }
 #pragma endregion
@@ -308,7 +353,11 @@ void ofApp::loadAllMusic()
 	auto& channelData_ = config::GetInstance()->channelData;
 	for (auto& Iter_ : channelData_)
 	{
-		effectMusicMgr::GetInstance()->addPlayer(Iter_._type, Iter_._audioGroup, Iter_._playerType, audioPath_ + Iter_._name + ".wav", Iter_._extendTime);
+		effectMusicMgr::GetInstance()->addPlayer(Iter_._type
+			,Iter_._audioGroup
+			,Iter_._playerType
+			,audioPath_ + Iter_._name + ".wav"
+			,Iter_._extendTime);
 	}
 
 	effectMusicMgr::GetInstance()->setup();
@@ -323,21 +372,16 @@ void ofApp::loadAllVideo()
 	string videoPath_ = config::GetInstance()->videoPath;
 	auto& channelData_ = config::GetInstance()->channelData;
 	visionDisplay::GetInstance()->loadBasic(videoPath_ + "Basic.mov");
-	visionDisplay::GetInstance()->loadTutorial("videos/tutorial.mov");
-	visionDisplay::GetInstance()->loadLoading("videos/loading.mov");
 
 	for (auto& Iter_ : channelData_)
 	{
 		visionDisplay::GetInstance()->addPlayer(Iter_._type, Iter_._playerType, videoPath_ + Iter_ ._name + ".mov", Iter_._level, Iter_._extendTime);
 	}
 
-#ifndef _USE_SIMULATION_
-	visionDisplay::GetInstance()->setup(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.5), ofGetWidth(), ofGetHeight());
-#else //_USE_SIMULATION_
+#ifdef _USE_SIMULATION_
 	visionDisplay::GetInstance()->setup(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.25), ofGetWidth() * 0.5, ofGetHeight() * 0.5);
 #endif // !_USE_SIMULATION_
 
-	visionDisplay::GetInstance()->playTutorial();
 }
 
 #pragma endregion
@@ -396,13 +440,7 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 			{
 				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
 				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
-			}
-			else
-			{
-				effectMusicMgr::GetInstance()->playerOut(eAudioType::eCenter_Button_1);
-				visionDisplay::GetInstance()->playerOut(eAudioType::eCenter_Button_1);
-			}
-			
+			}			
 			break;
 		}
 		case eButton_Audio_2:
@@ -411,11 +449,6 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 			{
 				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
 				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
-			}
-			else
-			{
-				effectMusicMgr::GetInstance()->playerOut(eAudioType::eCenter_Button_2);
-				visionDisplay::GetInstance()->playerOut(eAudioType::eCenter_Button_2);
 			}
 			
 			break;
@@ -427,25 +460,15 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
 				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
 			}
-			else
-			{
-				effectMusicMgr::GetInstance()->playerOut(eAudioType::eCenter_Button_3);
-				visionDisplay::GetInstance()->playerOut(eAudioType::eCenter_Button_3);
-			}
-
 			break;
 		}
-		case eButton_Effect_Echo:
+		case eButton_Audio_4:
 		{
 			if (e._param)
 			{
-				effectMusicMgr::GetInstance()->activeEffect(eEffect_Echo);
-			}
-			else
-			{
-				effectMusicMgr::GetInstance()->unactiveEffect(eEffect_Echo);
-			}
-			
+				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
+				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
+			}			
 			break;
 		}
 		case eButton_Effect_Dist:
@@ -461,15 +484,15 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 			
 			break;
 		}
-		case eButton_Effect_LowPass:
+		case eButton_Effect_PitchShift:
 		{
 			if (e._param)
 			{
-				effectMusicMgr::GetInstance()->activeEffect(eEffectType::eEffect_LowPass);
+				effectMusicMgr::GetInstance()->activeEffect(eEffectType::eEffect_PitchShift);
 			}
 			else
 			{
-				effectMusicMgr::GetInstance()->unactiveEffect(eEffectType::eEffect_LowPass);
+				effectMusicMgr::GetInstance()->unactiveEffect(eEffectType::eEffect_PitchShift);
 			}
 			
 			break;
@@ -618,7 +641,6 @@ void ofApp::httpRespone(ofxHttpResponse & Response)
 }
 #pragma endregion
 
-
 #ifdef _USE_SIMULATION_
 
 #pragma region Simulation
@@ -653,9 +675,9 @@ void ofApp::setupSimulation()
 	_buttons.addButton(eButton_Audio_1);
 	_buttons.addButton(eButton_Audio_2);
 	_buttons.addButton(eButton_Audio_3);
-	_buttons.addButton(eButton_Effect_Echo);
+	_buttons.addButton(eButton_Audio_4);
 	_buttons.addButton(eButton_Effect_Dist);
-	_buttons.addButton(eButton_Effect_LowPass);
+	_buttons.addButton(eButton_Effect_PitchShift);
 
 	ofAddListener(channel::_channelToggle, this, &ofApp::onCoinScanner);
 }
@@ -768,13 +790,14 @@ void ofApp::keypressSimulation(int key)
 		_buttons.troggleButton(eButton_Audio_3);
 		break;
 	}
-
-	//Button Effect
 	case 'b':
 	{
-		_buttons.troggleButton(eButton_Effect_Echo);
+		_buttons.troggleButton(eButton_Audio_4);
 		break;
 	}
+
+	//Button Effect
+
 	case 'n':
 	{
 		_buttons.troggleButton(eButton_Effect_Dist);
@@ -782,7 +805,7 @@ void ofApp::keypressSimulation(int key)
 	}
 	case 'm':
 	{
-		_buttons.troggleButton(eButton_Effect_LowPass);
+		_buttons.troggleButton(eButton_Effect_PitchShift);
 		break;
 	}
 	}

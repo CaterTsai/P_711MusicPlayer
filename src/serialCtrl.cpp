@@ -120,12 +120,12 @@ void deviceCtrl::decodeMsg()
 		case '0':
 		{
 			//Slider
-			sliderEvent();
+			//sliderEvent();
 			break;
 		}
 		case '1':
 		{
-			//Button
+			//Button			
 			buttonEvent();
 			break;
 		}
@@ -140,7 +140,7 @@ void deviceCtrl::decodeMsg()
 //--------------------------------------------
 void deviceCtrl::buttonEvent()
 {
-	if (_msg.length() < cBtnNum + 2)
+	if (_msg.length() < cBtnNum + 2 || _msg.length() > 9)
 	{
 		return;
 	}

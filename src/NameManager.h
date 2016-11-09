@@ -10,9 +10,12 @@ using namespace std;
 namespace NAME_MGR
 {
 	//Counter Event
+	CREATE_VALUE(CEvent_ShowHint);
+	CREATE_VALUE(CEvent_HideHint);
 	CREATE_VALUE(CEvent_StartRecode);
 	CREATE_VALUE(CEvent_EndRecode);
 	CREATE_VALUE(CEvent_StartFadeout);
+	CREATE_VALUE(CEvent_StartEnding);
 	CREATE_VALUE(CEvent_CounterFinish);
 
 	//System Caller Event

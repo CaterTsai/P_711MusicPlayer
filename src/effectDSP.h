@@ -69,4 +69,11 @@ private:
 	ofxAnimatableFloat _animCutHz;
 };
 
+//---------------------------------------------
+class pitchShifterDSP : public effectDSP
+{
+public:
+	void initialDSP() override;
+
+};
 

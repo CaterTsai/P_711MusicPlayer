@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define _USE_SIMULATION_
+//#define _USE_SIMULATION_
 #include "ofMain.h"
 #include "NameManager.h"
 //------------------------------------
@@ -29,6 +29,7 @@ enum eAudioType
 	, eCenter_Button_1
 	, eCenter_Button_2
 	, eCenter_Button_3
+	, eCenter_Button_4
 
 	, eAudioNum
 };
@@ -39,6 +40,14 @@ enum eAudioGroup
 	,eAudioGroup_Right
 	,eAudioGroup_Button
 
+};
+
+enum ePlayerState
+{
+	ePlayerWait = 0
+	,ePlayerPlaying
+	,ePlayerEnding
+	,ePlayerFadeout
 };
 
 enum eFadeState
@@ -56,9 +65,9 @@ enum eButtonType
 	eButton_Audio_1 = 0
 	, eButton_Audio_2
 	, eButton_Audio_3
-	, eButton_Effect_Echo
+	, eButton_Audio_4
 	, eButton_Effect_Dist
-	, eButton_Effect_LowPass
+	, eButton_Effect_PitchShift
 };
 
 enum eSliderType {
@@ -67,26 +76,40 @@ enum eSliderType {
 	,eSliderCenter
 };
 
+enum eVideoType
+{
+	eVideoTutorial	= 0
+	,eVideoHints
+	,eVideoUploading
+	,eVideoEnding
+};
 
+const static int cWindowWidth = 1920;
+const static int cWindowHeight = 1080;
 
-const static string cConfig_File_Path = "";
+const static int cCountTime = 90;
 
-const static float cTriggerCoinFadeout = 3.0;
 const static float cCoinFadeinTime = 1.0;
 const static float cCoinFadeoutTime = 3.0;
-
+const static float cTriggerCoinFadeout = cCountTime - cCoinFadeoutTime;
+const static float cEndingTime = cCountTime - 0.5f;
 //Video
 const static string cVideoTempPath = "data/recodeTemp/";
-const static float cRecodeLength = 35.0f;
-const static float cStartRecode = 50.0f;
-const static float cEndRecode = cStartRecode - cRecodeLength;
+const static float cRecodeLength = 32.0f;
+const static float cStartRecode = 25.0f;
+const static float cEndRecode = cStartRecode + cRecodeLength;
+
+const static float cShowHits = 20.0f;
+const static float cShowHightLength = 3.0f;
+const static float cHideHits = cShowHits + cShowHightLength;
 
 
 //------------------------------------
-//Countdown
+//Countter
 //------------------------------------
-const static ofVec2f cCountdownPos(1794, 80);
-const static int cCountTime = 60;
+const static int cCounterFontSize = 36;
+const static ofRectangle cCounterRect(112, 1008, 1697, 46);
+
 
 //------------------------------------
 //System Caller
@@ -117,6 +140,7 @@ const static int cCoinNum = cCoinNumEachSet * cCoinSetNum;
 const static int cMotorCloseTime = 6.0f;
 
 const static string cUPLOAD_URL = "http://events2.artgital.com/711DJ/s/711DJ.php";
+//const static string cUPLOAD_URL = "http://127.0.0.1/711DJ/s/711DJ.php";
 
 //----------------------------
 //QR Code Printer
