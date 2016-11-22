@@ -23,7 +23,6 @@ loopingPlayer::loopingPlayer(float extendLength)
 	:basicPlayer()
 	,_eState(eStateWait)
 	,_vol(1.0f)
-	,_maxVol(1.0f)
 	,_extendLength(extendLength)
 {
 }
@@ -102,16 +101,6 @@ bool loopingPlayer::isPlaying()
 }
 
 //--------------------------------------------------------------
-void loopingPlayer::setMaxVol(float vol)
-{
-	_maxVol = vol;
-	if (isPlaying())
-	{
-		_player.setVolume(_maxVol);
-	}
-}
-
-//--------------------------------------------------------------
 float loopingPlayer::getMaxVol()
 {
 	return _maxVol;
@@ -162,6 +151,7 @@ void triggerPlayer::in()
 {
 	if (_isStart)
 	{
+		_player.setVolume(_maxVol);
 		_player.play();
 	}
 }

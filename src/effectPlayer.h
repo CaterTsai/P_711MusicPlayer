@@ -7,6 +7,7 @@ class basicPlayer
 {
 public:
 	basicPlayer()
+		:_maxVol(1.0f)
 	{}
 
 	bool load(string path, bool loop = true);
@@ -17,11 +18,17 @@ public:
 	virtual void in() {};
 	virtual void out() {};
 
-	virtual void setMaxVol(float vol) {};
+	virtual void setMaxVol(float vol) {
+		_maxVol = vol;
+		if (isPlaying())
+		{
+			_player.setVolume(_maxVol);
+		}
+	};
 	virtual float getMaxVol() { return 1.0f; };
 	virtual bool isPlaying() { return false; };
 protected:
-	
+	float _maxVol;
 	ofSoundPlayer _player;
 };
 
@@ -39,13 +46,12 @@ public:
 	void out() override;
 	bool isPlaying() override;
 
-	void setMaxVol(float vol) override;
 	float getMaxVol() override;
 	eFadeState getState() const;
 
 private:
 	float _timer, _extendLength;
-	float _vol, _maxVol;
+	float _vol;
 	eFadeState _eState;
 
 };

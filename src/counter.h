@@ -52,7 +52,7 @@ public:
 		, _targetTime(0)
 	{}
 
-	void loadFont(string fontPath);
+	void load(string iconPath, string fontPath);
 	void update(const float delta);
 	void draw(ofRectangle rect);
 
@@ -63,6 +63,7 @@ private:
 	bool _isStart;
 	float _counterTimer,_targetTime;
 	ofTrueTypeFont	_font;
+	ofImage _heart;
 
 //-------------------------
 //Counter Event

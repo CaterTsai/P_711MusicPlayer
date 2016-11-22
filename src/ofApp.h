@@ -34,21 +34,28 @@ public:
 	void exit();
 	void keyPressed(int key);
 
+	void drawMessage();
+
 private:
 	float _mainTimer;
 	string _userID;
+	bool _hideCursor, _pauseSensor, _performanceMode;
 
 #pragma region Control
 public:
 	void startCoin();
 	void stopCoin();
 	void backtoTitle();
+
+	void startPerformance();
+	void stopPerformance();
 private:
 	enum eCoinState
 	{
 		eWaitStart = 0
 		,eCoinPlay
 		,eUploading
+		,ePerformance
 	}_state;
 
 #pragma endregion
@@ -89,7 +96,6 @@ private:
 public:
 	void setupArduino();
 	void updateArduino(float delta);
-	void drawArduino();
 	void onButtonEvent(serialArgs<bool>& e);
 	void onSliderEvent(serialArgs<float>& e);
 	void onSensorEvent(serialArgs<bool>& e);

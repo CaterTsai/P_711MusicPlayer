@@ -34,7 +34,7 @@ bool effectMusicMgr::isPlaying()
 }
 
 //--------------------------------------------------------------
-void effectMusicMgr::play()
+void effectMusicMgr::play(bool playBasic)
 {
 	_animMainVol.setDuration(cCoinFadeinTime);
 	_animMainVol.animateFromTo(0.0, 1.0);
@@ -45,7 +45,7 @@ void effectMusicMgr::play()
 		Iter_.second->play();
 	}
 
-	if (_basicPlayer.isLoaded())
+	if (_basicPlayer.isLoaded() && playBasic)
 	{
 		_basicPlayer.play();
 	}

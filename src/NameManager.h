@@ -19,6 +19,7 @@ namespace NAME_MGR
 	CREATE_VALUE(CEvent_CounterFinish);
 
 	//System Caller Event
+	CREATE_VALUE(SCEvent_ClearVideo);
 	CREATE_VALUE(SCEvent_MixVideo);
 
 };

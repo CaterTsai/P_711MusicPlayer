@@ -14,7 +14,7 @@ public:
 	void update(float delta);
 	bool isPlaying();
 
-	void play();
+	void play(bool playBasic = true);
 	void stop();
 	void fadeout();
 private:

@@ -3,10 +3,12 @@
 ofEvent <string> counter::_countEvent;
 
 //--------------------------------------------------------------
-void counter::loadFont(string fontPath)
+void counter::load(string iconPath, string fontPath)
 {
 	ofTrueTypeFont::setGlobalDpi(72);
 	_font.loadFont(fontPath, cCounterFontSize, true, true);
+
+	_heart.loadImage(iconPath);
 }
 
 //--------------------------------------------------------------
@@ -38,21 +40,16 @@ void counter::draw(ofRectangle rect)
 	ofPushStyle();
 	{
 		//Background
-		ofSetColor(255);
+		ofSetColor(155, 218, 165);
 		ofFill();
-		ofRect(rect);
-
-		ofSetColor(43, 170, 63);
-		ofNoFill();
-		ofSetLineWidth(1.0);
-		ofRect(rect);
+		ofRectRounded(rect, 30);
 
 		//Bar
 		float percentage_ = _counterTimer / _targetTime;
 		float barLength_ = rect.width * percentage_;
-		ofSetColor(43, 170, 63);
+		ofSetColor(77, 188, 93);
 		ofFill();
-		ofRect(rect.position, barLength_, rect.height);
+		ofRectRounded(rect.position, barLength_, rect.height, 30);
 
 		//Text
 		ofSetColor(255);
@@ -61,7 +58,7 @@ void counter::draw(ofRectangle rect)
 			ofVec2f fontPos_ = rect.position;
 			string val_ = ofToString(static_cast<int>(percentage_ * 100.0f + 0.5f)) + "%";
 			auto fontRect_ = _font.getStringBoundingBox(val_, 0, 0);
-			fontRect_.width *= 1.1;
+			fontRect_.width *= 1.3;
 
 			if (fontRect_.getWidth() < barLength_)
 			{
@@ -71,6 +68,11 @@ void counter::draw(ofRectangle rect)
 				_font.drawString(val_, fontPos_.x, fontPos_.y);
 			}
 		}
+
+		//Heart
+		ofSetColor(255);
+		ofVec2f heartPos_(rect.position.x - cHeartSize * 0.5 + barLength_, cHeartHight);
+		_heart.draw(heartPos_, cHeartSize, cHeartSize);
 	}
 	ofPopStyle();
 }

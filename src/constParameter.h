@@ -92,29 +92,31 @@ const static int cCountTime = 90;
 const static float cCoinFadeinTime = 1.0;
 const static float cCoinFadeoutTime = 3.0;
 const static float cTriggerCoinFadeout = cCountTime - cCoinFadeoutTime;
-const static float cEndingTime = cCountTime - 0.5f;
+const static float cEndingTime = cCountTime - 0.;
 //Video
 const static string cVideoTempPath = "data/recodeTemp/";
-const static float cRecodeLength = 32.0f;
-const static float cStartRecode = 25.0f;
-const static float cEndRecode = cStartRecode + cRecodeLength;
+const static float cRecodeLength = 22.0f;
+const static float cStartRecode = cCountTime - cRecodeLength;
+const static float cEndRecode = cCountTime;
 
 const static float cShowHits = 20.0f;
-const static float cShowHightLength = 3.0f;
+const static float cShowHightLength = 5.0f;
 const static float cHideHits = cShowHits + cShowHightLength;
 
 
 //------------------------------------
-//Countter
+//Counter
 //------------------------------------
 const static int cCounterFontSize = 36;
-const static ofRectangle cCounterRect(112, 1008, 1697, 46);
-
+const static ofRectangle cCounterRect(285, 1036, 1353, 35);
+const static int cHeartHight = 955;
+const static int cHeartSize = 97;
 
 //------------------------------------
 //System Caller
 //------------------------------------
 const static string cCmd_MixVideo = "mixVideo.bat ";
+const static string cCmd_ClearVideo = "removeVideo.bat";
 
 //------------------------------------
 //Simulator Key
@@ -156,4 +158,4 @@ static const string cQR_INTERVAL_TEX = "\x02";
 //Disk
 //------------------------------------
 const static float cCoinRadius = 5.0f;
-const static float cScannerAndCoinDegree = 180.0f;
+const static float cScannerAndCoinDegree = 20.0f;
