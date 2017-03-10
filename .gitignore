@@ -82,3 +82,12 @@ $RECYCLE.BIN/
 /obj/
 *.sln
 *.rc
+/.vs/711MusicPlayer/v14/.suo
+/addons.make
+/711MusicPlayer.vcxproj.user
+/711MusicPlayer.vcxproj.filters
+/711MusicPlayer.vcxproj
+/711MusicPlayer.VC.VC.opendb
+/711MusicPlayer.VC.db
+/711MusicPlayer.v11.suo
+/711MusicPlayer.sdf

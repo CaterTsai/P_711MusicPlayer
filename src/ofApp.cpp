@@ -5,10 +5,12 @@ void ofApp::setup()
 {
 	_pauseSensor = false;
 	_performanceMode = false;
+	//ofLogToFile("Log.txt", true);
 #ifndef _DEBUG
 	ofToggleFullscreen();
 	ofHideCursor();
 	_hideCursor = true;
+	
 #else
 	_hideCursor = false;
 #endif // _DEBUG
@@ -37,16 +39,20 @@ void ofApp::setup()
 	//QR Printer
 	_qrPrinter.setup();
 
+	//Idle Voice
+	setupIdleVoice();
+
 #ifdef _USE_SIMULATION_
 	setupSimulation();
 #endif // _USE_SIMULATION_
 
-
+	ofLog(OF_LOG_NOTICE, "[ofApp::Setup] Finish");
 
 	ofBackground(0);
 	ofSetVerticalSync(true);
 
 	_videoMgr.play(eVideoType::eVideoTutorial);
+	_idleVoice.start();
 	_mainTimer = ofGetElapsedTimef();
 }
 
@@ -66,6 +72,8 @@ void ofApp::update(){
 	_videoMgr.update(delta_);
 	updateCounter(delta_);
 	updateArduino(delta_);
+
+	_idleVoice.update(delta_);
 
 #ifdef _USE_SIMULATION_
 	updateSimulation(delta_);
@@ -208,7 +216,7 @@ void ofApp::startCoin()
 	effectMusicMgr::GetInstance()->play();
 
 	_counter.start(cCountTime);
-
+	_idleVoice.stop();
 	
 	_state = eCoinState::eCoinPlay;
 
@@ -230,6 +238,8 @@ void ofApp::stopCoin()
 
 	_openCountdown = cMotorCloseTime;
 	_ctrlDevice.open();
+	_coinSensorLeft.reset();
+	_coinSensorRight.reset();
 	_counter.stop();
 	_state = eCoinState::eUploading;
 
@@ -243,7 +253,7 @@ void ofApp::backtoTitle()
 		return;
 	}
 	_videoMgr.play(eVideoType::eVideoTutorial);
-
+	_idleVoice.start();
 	_state = eCoinState::eWaitStart;
 }
 
@@ -258,13 +268,13 @@ void ofApp::startPerformance()
 	_videoMgr.stop();
 
 	visionDisplay::GetInstance()->play();
-	effectMusicMgr::GetInstance()->play(false);
+	effectMusicMgr::GetInstance()->play();
 
 #ifdef _USE_SIMULATION_
 	_diskL.startMusic();
 	_diskR.startMusic();
 #endif // _USE_SI_USE_SIMULATION_MULATION_
-
+	_idleVoice.stop();
 	
 	_state = eCoinState::ePerformance;
 }
@@ -310,6 +320,8 @@ void ofApp::setupCounter()
 	_counter.load("images/heart_icon.png", "font/ARIALNB.TTF");
 
 	ofAddListener(_counter._countEvent, this, &ofApp::onCounterEvent);
+
+	ofLog(OF_LOG_NOTICE, "[ofApp::setupCounter] Finish");
 }
 
 //--------------------------------------------------------------
@@ -374,6 +386,8 @@ void ofApp::setupVideoMgr()
 	_videoMgr.addVideo(eVideoType::eVideoEnding, "videos/ending.mov");
 
 	ofAddListener(_videoMgr._onVideoDone, this, &ofApp::onVideoDone);
+
+	ofLog(OF_LOG_NOTICE, "[ofApp::setupVideoMgr] Finish");
 }
 
 //--------------------------------------------------------------
@@ -409,6 +423,7 @@ void ofApp::loadAllMusic()
 	}
 
 	effectMusicMgr::GetInstance()->setup();
+	ofLog(OF_LOG_NOTICE, "[ofApp::loadAllMusic] Finish");
 }
 
 #pragma endregion
@@ -429,7 +444,7 @@ void ofApp::loadAllVideo()
 #ifdef _USE_SIMULATION_
 	//visionDisplay::GetInstance()->setup(ofVec2f(ofGetWidth() * 0.5, ofGetHeight() * 0.25), ofGetWidth() * 0.5, ofGetHeight() * 0.5);
 #endif // !_USE_SIMULATION_
-
+	ofLog(OF_LOG_NOTICE, "[ofApp::loadAllVideo] Finish");
 }
 
 #pragma endregion
@@ -448,6 +463,8 @@ void ofApp::setupArduino()
 	_coinSensorRight.setup(config::GetInstance()->sensorRightPort, cSerialBaud);
 	ofAddListener(_coinSensorLeft._sensorEvent, this, &ofApp::onSensorEvent);
 	ofAddListener(_coinSensorRight._sensorEvent, this, &ofApp::onSensorEvent);
+
+	ofLog(OF_LOG_NOTICE, "[ofApp::setupArduino] Finish");
 
 }
 
@@ -508,30 +525,22 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 			}			
 			break;
 		}
-		case eButton_Effect_Dist:
+		case eButton_Audio_5:
 		{
 			if (e._param)
 			{
-				effectMusicMgr::GetInstance()->activeEffect(eEffect_Distortion);
+				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_5);
+				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_5);
 			}
-			else
-			{
-				effectMusicMgr::GetInstance()->unactiveEffect(eEffect_Distortion);
-			}
-			
 			break;
 		}
-		case eButton_Effect_PitchShift:
+		case eButton_Audio_6:
 		{
 			if (e._param)
 			{
-				effectMusicMgr::GetInstance()->activeEffect(eEffectType::eEffect_PitchShift);
+				effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_6);
+				visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_6);
 			}
-			else
-			{
-				effectMusicMgr::GetInstance()->unactiveEffect(eEffectType::eEffect_PitchShift);
-			}
-			
 			break;
 		}
 		default:
@@ -680,6 +689,18 @@ void ofApp::httpRespone(ofxHttpResponse & Response)
 }
 #pragma endregion
 
+#pragma region idle Voice
+void ofApp::setupIdleVoice()
+{
+	_idleVoice.addVoice("voices/voice1.mp3");
+	_idleVoice.addVoice("voices/voice2.mp3");
+	_idleVoice.addVoice("voices/voice3.mp3");
+
+	_idleVoice.setWaitTime(config::GetInstance()->idleVoiceTime);
+	_idleVoice.setRange(config::GetInstance()->idleStartHour, config::GetInstance()->idleEndHour);
+}
+#pragma endregion
+
 #ifdef _USE_SIMULATION_
 
 #pragma region Simulation
@@ -715,8 +736,8 @@ void ofApp::setupSimulation()
 	_buttons.addButton(eButton_Audio_2);
 	_buttons.addButton(eButton_Audio_3);
 	_buttons.addButton(eButton_Audio_4);
-	_buttons.addButton(eButton_Effect_Dist);
-	_buttons.addButton(eButton_Effect_PitchShift);
+	_buttons.addButton(eButton_Audio_5);
+	_buttons.addButton(eButton_Audio_6);
 
 	ofAddListener(channel::_channelToggle, this, &ofApp::onCoinScanner);
 }
@@ -816,35 +837,44 @@ void ofApp::keypressSimulation(int key)
 	//Button Audio
 	case 'h':
 	{
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_1);
 		_buttons.troggleButton(eButton_Audio_1);
 		break;
 	}
 	case 'j':
 	{
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_2);
 		_buttons.troggleButton(eButton_Audio_2);
 		break;
 	}
 	case 'k':
 	{
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_3);
 		_buttons.troggleButton(eButton_Audio_3);
 		break;
 	}
 	case 'b':
 	{
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_4);
 		_buttons.troggleButton(eButton_Audio_4);
 		break;
 	}
-
-	//Button Effect
-
 	case 'n':
 	{
-		_buttons.troggleButton(eButton_Effect_Dist);
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_5);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_5);
+		_buttons.troggleButton(eButton_Audio_5);
 		break;
 	}
 	case 'm':
 	{
-		_buttons.troggleButton(eButton_Effect_PitchShift);
+		effectMusicMgr::GetInstance()->playerIn(eAudioType::eCenter_Button_6);
+		visionDisplay::GetInstance()->playerIn(eAudioType::eCenter_Button_6);
+		_buttons.troggleButton(eButton_Audio_6);
 		break;
 	}
 	}

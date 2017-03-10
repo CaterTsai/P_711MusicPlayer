@@ -192,11 +192,18 @@ void effectMusicMgr::setGroupBalance(float val)
 //--------------------------------------------------------------
 void effectMusicMgr::setGroupVol(eAudioGroup aGroup, float vol)
 {
-	auto audioList_ = _groupSet[aGroup];
-	for (auto& iter_ : audioList_)
-	{
-		_playerMgr[iter_]->setMaxVol(vol);
+	try {
+		auto audioList_ = _groupSet.at(aGroup);
+		for (auto& iter_ : audioList_)
+		{
+			_playerMgr[iter_]->setMaxVol(vol);
+		}
 	}
+	catch (exception& e)
+	{
+		ofLog(OF_LOG_ERROR, e.what());
+	}
+	
 }
 
 //--------------------------------------------------------------
@@ -257,16 +264,6 @@ void effectMusicMgr::updateGroupVol(eAudioGroup eGroup)
 //--------------------------------------------------------------
 void effectMusicMgr::setupEffect()
 {
-
-	ofPtr<effectDSP> distortion_ = ofPtr<effectDSP>(new distortionDSP());
-	distortion_->setup(FMOD_DSP_TYPE_DISTORTION);
-
-	ofPtr<effectDSP> pitchshift = ofPtr<effectDSP>(new pitchShifterDSP());
-	pitchshift->setup(FMOD_DSP_TYPE_PITCHSHIFT);
-
-	_effectMgr.insert(make_pair(eEffect_Distortion, distortion_));
-	_effectMgr.insert(make_pair(eEffect_PitchShift, pitchshift));
-
 	//FMOD::Reverb3D
 	FMOD_REVERB_PROPERTIES prop = FMOD_PRESET_AUDITORIUM;
 	ofFmodGetSystem()->setReverbProperties(0, &prop);

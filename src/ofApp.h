@@ -14,7 +14,7 @@
 #include "counter.h"
 #include "ofxCTSystemCaller.h"
 #include "videoMgr.h"
-
+#include "idleVoice.h"
 #ifdef _USE_SIMULATION_
 #include "disk.h"
 #include "buttonArray.h"
@@ -130,6 +130,13 @@ private:
 	qrPrinter	_qrPrinter;
 #pragma endregion
 
+#pragma region Idle Voice
+public:
+	void setupIdleVoice();
+private:
+	idleVoice _idleVoice;
+#pragma endregion
+	
 #pragma region Simulation
 #ifdef _USE_SIMULATION_
 //Disk

@@ -24,7 +24,8 @@ public:
 	string videoPath;
 	string devicePort;
 	string sensorLeftPort, sensorRightPort;
-	
+	float idleVoiceTime;
+	int idleStartHour, idleEndHour;
 	vector<channelData> channelData;
 
 

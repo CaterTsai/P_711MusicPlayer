@@ -30,6 +30,8 @@ enum eAudioType
 	, eCenter_Button_2
 	, eCenter_Button_3
 	, eCenter_Button_4
+	, eCenter_Button_5
+	, eCenter_Button_6
 
 	, eAudioNum
 };
@@ -66,8 +68,9 @@ enum eButtonType
 	, eButton_Audio_2
 	, eButton_Audio_3
 	, eButton_Audio_4
-	, eButton_Effect_Dist
-	, eButton_Effect_PitchShift
+	, eButton_Audio_5
+	, eButton_Audio_6
+
 };
 
 enum eSliderType {
@@ -159,3 +162,4 @@ static const string cQR_INTERVAL_TEX = "\x02";
 //------------------------------------
 const static float cCoinRadius = 5.0f;
 const static float cScannerAndCoinDegree = 20.0f;
+

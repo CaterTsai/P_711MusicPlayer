@@ -65,7 +65,7 @@ void serialCtrl::read()
 	}
 	else
 	{
-		_msg = tempMsg_.substr(sta_ + 1, end_ - sta_ + 1);
+		_msg = tempMsg_.substr(sta_ + 1, end_ - (sta_ + 1));
 		_msgComplete = true;
 	}
 }
@@ -194,7 +194,15 @@ void sensorCtrl::decodeMsg()
 	case '2':
 	{
 		//Color sensor
-		sensorEvent();
+		if (_msg.size() == 7)
+		{
+			sensorEvent();
+		}
+		else
+		{
+			ofLog(OF_LOG_ERROR, "[sensorCtrl::decodeMsg]Msg length wrong : " +ofToString(_msg.size()));
+		}
+		
 		break;
 	}
 	default:
@@ -213,6 +221,7 @@ void sensorCtrl::sensorEvent()
 	{
 		return;
 	}
+
 
 	for (int idx_ = 0; idx_ < cCoinNumEachSet; idx_++)
 	{
