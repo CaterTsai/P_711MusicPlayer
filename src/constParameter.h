@@ -2,7 +2,6 @@
 
 
 //#define _USE_SIMULATION_
-#define _NO_VIDEO_UPLOAD_
 #include "ofMain.h"
 #include "NameManager.h"
 //------------------------------------

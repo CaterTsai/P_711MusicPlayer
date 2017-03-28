@@ -117,6 +117,12 @@ void deviceCtrl::decodeMsg()
 {
 	switch (_msg[0])
 	{
+		case '0':
+		{
+			//Slider
+			//sliderEvent();
+			break;
+		}
 		case '1':
 		{
 			//Button			
@@ -157,6 +163,20 @@ void deviceCtrl::buttonEvent()
 	}
 	
 }
+
+//--------------------------------------------
+void deviceCtrl::sliderEvent()
+{
+	if (_msg.length() < 6)
+	{
+		return;
+	}
+	string val_ = _msg.substr(2, 4);
+	float vol_ = (3.0f - atof(val_.c_str()));
+
+	serialArgs<float> args_(_msg[0], _msg[1], vol_);
+	ofNotifyEvent(_sliderEvent, args_);
+}
 #pragma endregion
 
 #pragma region sensorCtrl
@@ -166,20 +186,6 @@ void sensorCtrl::reset()
 	//Reset
 	send('r');
 }
-
-//--------------------------------------------
-void sensorCtrl::setCoinCheck(bool val)
-{
-	_isCheckCoin = val;
-	val?send('t'): send('f');
-}
-
-//--------------------------------------------
-bool sensorCtrl::getCoinCheck()
-{
-	return _isCheckCoin;
-}
-
 //--------------------------------------------
 void sensorCtrl::decodeMsg()
 {
