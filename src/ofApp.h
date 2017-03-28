@@ -15,6 +15,7 @@
 #include "ofxCTSystemCaller.h"
 #include "videoMgr.h"
 #include "idleVoice.h"
+
 #ifdef _USE_SIMULATION_
 #include "disk.h"
 #include "buttonArray.h"
@@ -26,7 +27,6 @@ class ofApp : public ofBaseApp {
 public:
 	ofApp()
 		:_state(eWaitStart)
-		, _muteBasic(false)
 	{}
 	void setup();
 	void update();
@@ -39,16 +39,13 @@ public:
 private:
 	float _mainTimer;
 	string _userID;
-	bool _hideCursor, _pauseSensor, _performanceMode;
+	bool _debugMode, _pauseSensor;
 
 #pragma region Control
 public:
 	void startCoin();
 	void stopCoin();
 	void backtoTitle();
-
-	void startPerformance();
-	void stopPerformance();
 private:
 	enum eCoinState
 	{
@@ -82,9 +79,6 @@ private:
 #pragma region Effect Music Manager
 private:
 	void loadAllMusic();
-
-private:
-	bool _muteBasic;
 #pragma endregion
 
 #pragma region Vision Display
@@ -97,7 +91,6 @@ public:
 	void setupArduino();
 	void updateArduino(float delta);
 	void onButtonEvent(serialArgs<bool>& e);
-	void onSliderEvent(serialArgs<float>& e);
 	void onSensorEvent(serialArgs<bool>& e);
 
 private:

@@ -4,15 +4,14 @@
 void ofApp::setup()
 {
 	_pauseSensor = false;
-	_performanceMode = false;
 	//ofLogToFile("Log.txt", true);
 #ifndef _DEBUG
 	ofToggleFullscreen();
 	ofHideCursor();
-	_hideCursor = true;
+	_debugMode = false;
 	
 #else
-	_hideCursor = false;
+	_debugMode = true;
 #endif // _DEBUG
 
 	config::GetInstance()->load("_config.xml");
@@ -88,14 +87,15 @@ void ofApp::draw(){
 	drawSimulation();
 #endif // _USE_SIMULATION_
 
-
 	visionDisplay::GetInstance()->draw();	
 	_videoMgr.draw();
 
 	drawCounter();
-	drawMessage();
 
-
+	if (_debugMode)
+	{
+		drawMessage();
+	}	
 }
 
 //--------------------------------------------------------------
@@ -120,22 +120,6 @@ void ofApp::keyPressed(int key)
 			stopCoin();
 			break;
 		}
-		case 'z':
-		{
-			startPerformance();
-			break;
-		}
-		case 'x':
-		{
-			stopPerformance();
-			break;
-		}
-		case 'd':
-		{
-			_muteBasic = !_muteBasic;
-			_muteBasic ? effectMusicMgr::GetInstance()->setBasicVol(0.0f) : effectMusicMgr::GetInstance()->setBasicVol(1.0f);
-			break;
-		}
 
 		//Fullscreen
 		case 'f':
@@ -144,10 +128,10 @@ void ofApp::keyPressed(int key)
 			break;
 		}
 
-		case 'g':
+		case 'd':
 		{
-			_hideCursor = !_hideCursor;
-			_hideCursor ? ofHideCursor() : ofShowCursor();
+			_debugMode = !_debugMode;
+			_debugMode ? ofShowCursor() : ofHideCursor();
 			break;
 		}
 
@@ -159,10 +143,15 @@ void ofApp::keyPressed(int key)
 		}
 		case '2':
 		{
-			_performanceMode ^= true;
+			_coinSensorLeft.setCoinCheck(!_coinSensorLeft.getCoinCheck());
 			break;
 		}
 		case '3':
+		{
+			_coinSensorRight.setCoinCheck(!_coinSensorRight.getCoinCheck());
+			break;
+		}
+		case '0':
 		{
 			_pauseSensor ^= true;
 			break;
@@ -181,23 +170,22 @@ void ofApp::keyPressed(int key)
 void ofApp::drawMessage()
 {
 	ofPushStyle();
-	if (_motorCtrl)
-	{
-		ofSetColor(255, 0, 0);
-		ofCircle(5, 5, 5);
-	}
 
-	if (_performanceMode)
-	{
-		ofSetColor(0, 255, 0);
-		ofCircle(15, 5, 5);
-	}
+	ofSetColor(0, 200);
+	ofRect(0, 0, 200, 100);
 
-	if (_pauseSensor)
-	{
-		ofSetColor(0, 0, 255);
-		ofCircle(25, 5, 5);
-	}
+	ofSetColor(255);
+	string sensorMsg_ = "Pause Sensor(0) : ";
+	ofDrawBitmapString(sensorMsg_ + (_pauseSensor ? "YES" : "NO"), 0, 30);
+	
+	string motorMsg_ = "Motor Ctrl Mode(1) : ";
+	ofDrawBitmapString(motorMsg_ + (_motorCtrl ? "YES" : "NO"), 0, 15);
+
+	string coinCheckLeft = "Coin Check Left(2) : ";
+	ofDrawBitmapString(coinCheckLeft + (_coinSensorLeft.getCoinCheck() ? "YES" : "NO"), 0, 45);
+
+	string coinCheckRight = "Coin Check Right(3) : ";
+	ofDrawBitmapString(coinCheckRight + (_coinSensorRight.getCoinCheck() ? "YES" : "NO"), 0, 60);
 
 	ofPopStyle();
 }
@@ -238,8 +226,6 @@ void ofApp::stopCoin()
 
 	_openCountdown = cMotorCloseTime;
 	_ctrlDevice.open();
-	_coinSensorLeft.reset();
-	_coinSensorRight.reset();
 	_counter.stop();
 	_state = eCoinState::eUploading;
 
@@ -253,56 +239,12 @@ void ofApp::backtoTitle()
 		return;
 	}
 	_videoMgr.play(eVideoType::eVideoTutorial);
-	_idleVoice.start();
+	_idleVoice.start();	
+	_coinSensorLeft.reset();
+	_coinSensorRight.reset();
 	_state = eCoinState::eWaitStart;
 }
 
-//--------------------------------------------------------------
-void ofApp::startPerformance()
-{
-	if (_state != eCoinState::eWaitStart || _ctrlDevice.isOpen() || _pauseSensor)
-	{
-		return;
-	}
-	cout << "startPerformance" << endl;
-	_videoMgr.stop();
-
-	visionDisplay::GetInstance()->play();
-	effectMusicMgr::GetInstance()->play();
-
-#ifdef _USE_SIMULATION_
-	_diskL.startMusic();
-	_diskR.startMusic();
-#endif // _USE_SI_USE_SIMULATION_MULATION_
-	_idleVoice.stop();
-	
-	_state = eCoinState::ePerformance;
-}
-
-//--------------------------------------------------------------
-void ofApp::stopPerformance()
-{
-	if (_state != eCoinState::ePerformance)
-	{
-		return;
-	}
-	effectMusicMgr::GetInstance()->stop();
-	visionDisplay::GetInstance()->stop();
-
-	_videoMgr.play(eVideoType::eVideoTutorial);
-	//_ctrlDevice.open();
-
-#ifdef _USE_SIMULATION_
-	_diskL.stopMusic();
-	_diskR.stopMusic();
-	_diskL.clearCoin();
-	_diskR.clearCoin();
-#endif // _USE_SIMULATION_
-
-
-
-	_state = eCoinState::eWaitStart;
-}
 #pragma endregion
 
 #pragma region Counter
@@ -457,13 +399,14 @@ void ofApp::setupArduino()
 	_openCountdown = 0.0f;
 	_ctrlDevice.setup(config::GetInstance()->devicePort, cSerialBaud);
 	ofAddListener(_ctrlDevice._buttonEvent, this, &ofApp::onButtonEvent);
-	ofAddListener(_ctrlDevice._sliderEvent, this, &ofApp::onSliderEvent);
 
 	_coinSensorLeft.setup(config::GetInstance()->sensorLeftPort, cSerialBaud);
 	_coinSensorRight.setup(config::GetInstance()->sensorRightPort, cSerialBaud);
 	ofAddListener(_coinSensorLeft._sensorEvent, this, &ofApp::onSensorEvent);
 	ofAddListener(_coinSensorRight._sensorEvent, this, &ofApp::onSensorEvent);
 
+	_coinSensorLeft.setCoinCheck(true);
+	_coinSensorRight.setCoinCheck(true);
 	ofLog(OF_LOG_NOTICE, "[ofApp::setupArduino] Finish");
 
 }
@@ -551,38 +494,6 @@ void ofApp::onButtonEvent(serialArgs<bool>& e)
 }
 
 //--------------------------------------------------------------
-void ofApp::onSliderEvent(serialArgs<float>& e)
-{
-	eSliderType eSliderType_ = (eSliderType)(e._no - '0');
-
-	switch (eSliderType_)
-	{
-		case eSliderLeft:
-		{
-			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f, true);
-			effectMusicMgr::GetInstance()->setGroupVol(eAudioGroup::eAudioGroup_Left, val_);
-			break;
-		}
-		case eSliderRight:
-		{
-			float val_ = ofMap(e._param, 0.0f, 3.1f, 0.1f, 3.0f, true);
-			effectMusicMgr::GetInstance()->setGroupVol(eAudioGroup::eAudioGroup_Right, val_);
-			break;
-		}
-		case eSliderCenter:
-		{
-			float val_ = ofMap(e._param, 0.0f, 3.0f, 0.0f, 1.0f, true);
-			effectMusicMgr::GetInstance()->setGroupBalance(val_);
-			break;
-		}
-		default:
-		{
-			break;
-		}
-	}
-}
-
-//--------------------------------------------------------------
 void ofApp::onSensorEvent(serialArgs<bool>& e)
 {
 	eAudioType audioType_ = (eAudioType)(e._no);
@@ -593,7 +504,6 @@ void ofApp::onSensorEvent(serialArgs<bool>& e)
 
 	if (e._param)
 	{
-		_performanceMode ? startPerformance() : startCoin();
 		effectMusicMgr::GetInstance()->playerIn(audioType_);
 		visionDisplay::GetInstance()->playerIn(audioType_);
 	}
@@ -634,10 +544,13 @@ void ofApp::onSystemCallFinish(string& msg)
 {
 	if (msg == NAME_MGR::SCEvent_MixVideo)
 	{
+
+#ifdef _NO_VIDEO_UPLOAD_
+		backtoTitle();
+#else
 		ofLog(OF_LOG_NOTICE, "[ofApp::onSystemCallFinish]Start upload to server");
 		upload(_userID);
-
-
+#endif // _NO_VIDEO_UPLOAD_
 	}
 }
 #pragma endregion

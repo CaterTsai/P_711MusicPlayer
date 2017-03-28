@@ -63,7 +63,6 @@ private:
 
 private:
 	void buttonEvent();
-	void sliderEvent();
 
 private:
 	bool _isOpen;
@@ -73,7 +72,6 @@ private:
 //event
 public:
 	ofEvent<serialArgs<bool>>	_buttonEvent;
-	ofEvent<serialArgs<float>>  _sliderEvent;
 
 };
 
@@ -83,11 +81,14 @@ class sensorCtrl : public serialCtrl
 public:
 	sensorCtrl()
 		:serialCtrl()
+		,_isCheckCoin(true)
 	{
 		ZeroMemory(_isTrigger, sizeof(bool)*cCoinSetNum*cCoinNumEachSet);
 	}
 
 	void reset();
+	void setCoinCheck(bool val);
+	bool getCoinCheck();
 private:
 
 	void decodeMsg() override;
@@ -99,4 +100,7 @@ private:
 //event
 public:
 	ofEvent<serialArgs<bool>>	_sensorEvent;
+
+private:
+	bool _isCheckCoin;
 };
